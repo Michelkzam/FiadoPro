@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { NOTIFICATION_POLL_INTERVAL } from "@/lib/constants";
 import { Bell, BellRing, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,7 +14,7 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, NOTIFICATION_POLL_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 

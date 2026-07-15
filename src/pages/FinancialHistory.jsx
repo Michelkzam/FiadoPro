@@ -5,14 +5,7 @@ import { Button } from "@/components/ui/button";
 import { subDays } from "date-fns";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCustomers, useAllTransactions } from "@/hooks/useQueries";
-import { formatCurrency, parseDateBR } from "@/lib/constants";
-
-const PERIODS = [
-  { label: "30 dias", days: 30 },
-  { label: "60 dias", days: 60 },
-  { label: "90 dias", days: 90 },
-  { label: "Tudo", days: 9999 },
-];
+import { formatCurrency, parseDateBR, PERIODS } from "@/lib/constants";
 
 export default function FinancialHistory() {
   const [search, setSearch] = useState("");

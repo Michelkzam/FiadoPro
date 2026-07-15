@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCustomers, useTransactions } from "@/hooks/useQueries";
-import { formatCurrency } from "@/lib/constants";
+import { formatCurrency, parseDateBR } from "@/lib/constants";
 
 export default function Reports() {
   const { data: customers = [], isLoading: lc } = useCustomers();
@@ -28,7 +28,7 @@ export default function Reports() {
     const purchases = getTransactions(cid).filter((t) => t.type === "compra");
     if (purchases.length === 0) return null;
     const last = purchases[0];
-    const parsed = new Date(last.date?.split("/").reverse().join("-"));
+    const parsed = parseDateBR(last.date);
     const diffTime = Date.now() - parsed.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };

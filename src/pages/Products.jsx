@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import LoadingSpinner from "../components/LoadingSpinner";
 import db from "@/lib/db";
 import { useProducts } from "@/hooks/useQueries";
-import { formatCurrency, PRODUCT_CATEGORIES } from "@/lib/constants";
+import { formatCurrency, PRODUCT_CATEGORIES, MAX_UPLOAD_SIZE, ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 
 const emptyForm = { name: "", description: "", price: "", category: "", image_url: "", available: true };
 
@@ -63,8 +63,8 @@ export default function Products() {
     setDialogOpen(true);
   };
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024;
-  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const MAX_FILE_SIZE = MAX_UPLOAD_SIZE;
+  const ALLOWED_TYPES = ALLOWED_IMAGE_TYPES;
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];

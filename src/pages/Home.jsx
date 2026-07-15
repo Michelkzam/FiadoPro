@@ -1,11 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Users, TrendingDown, TrendingUp, DollarSign, ClipboardList, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import BalanceBadge from "../components/BalanceBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import db from "@/lib/db";
+import { useCustomers, useTransactions, useOrders } from "@/hooks/useQueries";
 import { formatCurrency, formatDateBR, parseDateBR } from "@/lib/constants";
 
 const PIE_COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6"];
@@ -33,18 +32,9 @@ function DetailPanel({ title, count, children }) {
 export default function Home() {
   const [activeCard, setActiveCard] = useState(null);
 
-  const { data: customers = [], isLoading: loadingC } = useQuery({
-    queryKey: ["customers"],
-    queryFn: () => db.entities.Customer.list(),
-  });
-  const { data: transactions = [], isLoading: loadingT } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => db.entities.Transaction.list("-created_at", 200),
-  });
-  const { data: orders = [], isLoading: loadingO } = useQuery({
-    queryKey: ["orders"],
-    queryFn: () => db.entities.Order.list("-created_at", 100),
-  });
+  const { data: customers = [], isLoading: loadingC } = useCustomers();
+  const { data: transactions = [], isLoading: loadingT } = useTransactions();
+  const { data: orders = [], isLoading: loadingO } = useOrders();
 
   const today = useMemo(() => formatDateBR(), []);
 

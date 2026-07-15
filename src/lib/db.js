@@ -1,4 +1,4 @@
-import { api, auth, entities, uploadFile } from './apiClient';
+import { auth, entities, uploadFile } from './apiClient';
 
 const db = {
   auth: {

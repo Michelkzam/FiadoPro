@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import db from "@/lib/db";
 import { sendBulkMessages, checkConnection, configureWhatsApp, getConfig } from "@/services/whatsappApi";
-import { formatCurrency, formatDateBR } from "@/lib/constants";
+import { formatCurrency, formatDateBR, STORE_NAME_FALLBACK } from "@/lib/constants";
 
 const STORAGE_KEY = "whatsapp_config";
 const SCHEDULE_KEY = "menu_schedule_config";
@@ -34,7 +34,7 @@ const saveScheduleConfig = (config) => {
 };
 
 const generateMenuMessage = (products, storeProfile, customMessage = "") => {
-  const storeName = storeProfile?.store_name || "Nossa Loja";
+  const storeName = storeProfile?.store_name || STORE_NAME_FALLBACK;
   const today = formatDateBR();
   const greeting = getGreeting();
 
@@ -183,19 +183,6 @@ export function useMenuSender() {
     saveScheduleConfig(newConfig);
   }, []);
 
-  const getTodayHistory = useCallback(async () => {
-    try {
-      const history = await db.entities.MenuSendHistory.list("-date", 10);
-      const today = formatDateBR();
-      return history.filter((h) => {
-        const sendDate = new Date(h.date).toLocaleDateString("pt-BR");
-        return sendDate === today;
-      });
-    } catch {
-      return [];
-    }
-  }, []);
-
   useEffect(() => {
     const savedConfig = loadConfig();
     if (savedConfig) {
@@ -241,6 +228,5 @@ export function useMenuSender() {
     testConnection,
     sendMenu,
     updateSchedule,
-    getTodayHistory,
   };
 }

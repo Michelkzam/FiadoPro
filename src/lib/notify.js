@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/constants";
 
 export async function createNotification({ title, body, url = "/", tag = null, userId = null }) {
   const { error } = await supabase.from("notifications").insert({
@@ -23,19 +24,10 @@ export function notifyNewOrder(order) {
   });
 }
 
-export function notifyOrderApproved(order) {
-  return createNotification({
-    title: "Pedido Aprovado",
-    body: `Pedido de ${order.customer_name} foi aprovado`,
-    url: "/pedidos",
-    tag: `order-approved-${order.id}`,
-  });
-}
-
 export function notifyPaymentReceived(customerName, amount) {
   return createNotification({
     title: "Pagamento Recebido",
-    body: `${customerName} realizou um pagamento de ${formatCurrencyBR(amount)}`,
+    body: `${customerName} realizou um pagamento de ${formatCurrency(amount)}`,
     url: "/compras",
     tag: `payment-${Date.now()}`,
   });
@@ -48,8 +40,4 @@ export function notifyNewCustomer(customerName) {
     url: "/clientes",
     tag: `customer-${Date.now()}`,
   });
-}
-
-function formatCurrencyBR(value) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
 }

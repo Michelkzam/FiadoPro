@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import db from "@/lib/db";
-import { formatCurrency, openWhatsApp, sanitizePhone } from "@/lib/constants";
+import { formatCurrency, openWhatsApp } from "@/lib/constants";
 import { notifyPaymentReceived } from "@/lib/notify";
 
 const MAX_RETRY_ATTEMPTS = 3;

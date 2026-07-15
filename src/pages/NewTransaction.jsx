@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useCustomer, useStoreProfile } from "@/hooks/useQueries";
 import { useTransactionActions } from "@/hooks/useActions";
+import { STORE_NAME_FALLBACK } from "@/lib/constants";
 
 export default function NewTransaction() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ export default function NewTransaction() {
 
   const { data: customer } = useCustomer(id);
   const { data: storeProfiles = [] } = useStoreProfile();
-  const storeName = storeProfiles[0]?.store_name || "Nossa Loja";
+  const storeName = storeProfiles[0]?.store_name || STORE_NAME_FALLBACK;
 
   const urlParams = new URLSearchParams(window.location.search);
   const [type, setType] = useState(urlParams.get("type") || "compra");

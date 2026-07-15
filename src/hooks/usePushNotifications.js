@@ -107,50 +107,6 @@ export function usePushNotifications() {
     }
   }, [subscription]);
 
-  const sendPushToAll = useCallback(async (title, body, url = "/", tag = null) => {
-    const { data: subscriptions } = await supabase
-      .from("push_subscriptions")
-      .select("*");
-
-    if (!subscriptions || subscriptions.length === 0) return;
-
-    for (const sub of subscriptions) {
-      try {
-        const pushSubscription = {
-          endpoint: sub.endpoint,
-          keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
-          },
-        };
-
-        const payload = JSON.stringify({
-          title,
-          body,
-          url,
-          tag: tag || `fiado-${Date.now()}`,
-          icon: "/favicon.svg",
-        });
-
-        await fetch("/api/push/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscription: pushSubscription, payload }),
-        }).catch(() => {
-          // fallback: store notification for later
-        });
-      } catch {
-        // individual subscription failed, continue with others
-      }
-    }
-  }, []);
-
-  const sendLocalNotification = useCallback((title, body, url = "/") => {
-    if (permission === "granted") {
-      new Notification(title, { body, icon: "/favicon.svg", tag: `fiado-${Date.now()}` });
-    }
-  }, [permission]);
-
   return {
     subscription,
     permission,
@@ -158,7 +114,5 @@ export function usePushNotifications() {
     loading,
     subscribe,
     unsubscribe,
-    sendPushToAll,
-    sendLocalNotification,
   };
 }

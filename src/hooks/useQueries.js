@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import db from "@/lib/db";
+import { PENDING_ORDERS_POLL_INTERVAL } from "@/lib/constants";
 
 export function useCustomers() {
   return useQuery({
@@ -44,7 +45,7 @@ export function usePendingOrders() {
   return useQuery({
     queryKey: ["orders_pending"],
     queryFn: () => db.entities.Order.filter({ status: "pendente" }, "-created_at", 100),
-    refetchInterval: 30000,
+    refetchInterval: PENDING_ORDERS_POLL_INTERVAL,
   });
 }
 

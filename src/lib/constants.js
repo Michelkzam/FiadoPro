@@ -19,11 +19,6 @@ export const TRANSACTION_TYPE = {
   PAGAMENTO: "pagamento",
 };
 
-export const CUSTOMER_STATUS = {
-  ATIVO: "ativo",
-  INATIVO: "inativo",
-};
-
 export const PAYMENT_METHODS = [
   { value: "dinheiro", label: "Dinheiro" },
   { value: "pix", label: "Pix" },
@@ -32,6 +27,21 @@ export const PAYMENT_METHODS = [
 ];
 
 export const PRODUCT_CATEGORIES = ["Produto", "Serviço", "Pratos", "Bebidas", "Combos"];
+
+export const STORE_NAME_FALLBACK = "FiadoPro";
+
+export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+export const NOTIFICATION_POLL_INTERVAL = 15000;
+export const PENDING_ORDERS_POLL_INTERVAL = 30000;
+
+export const PERIODS = [
+  { label: "30 dias", days: 30 },
+  { label: "60 dias", days: 60 },
+  { label: "90 dias", days: 90 },
+  { label: "Tudo", days: 9999 },
+];
 
 export const CURRENCY_FORMATTER = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -68,9 +78,4 @@ export const openWhatsApp = (phone, message) => {
   const clean = sanitizePhone(phone);
   if (!clean) return;
   window.open(`https://wa.me/55${clean}?text=${encodeURIComponent(message)}`, "_blank");
-};
-
-export const ROLES = {
-  COMERCIO: "comercio",
-  CLIENTE: "cliente",
 };

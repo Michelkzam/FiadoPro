@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import db from "@/lib/db";
 import { useMenuSender } from "@/hooks/useMenuSender";
+import { MAX_UPLOAD_SIZE, formatCurrency } from "@/lib/constants";
 
 export default function MenuSender() {
   const {
@@ -102,7 +103,7 @@ export default function MenuSender() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const MAX_SIZE = 5 * 1024 * 1024;
+    const MAX_SIZE = MAX_UPLOAD_SIZE;
     if (file.size > MAX_SIZE) {
       toast.error("Imagem muito grande. Máximo: 5MB");
       return;
@@ -214,10 +215,7 @@ export default function MenuSender() {
                           <div key={p.id} className="flex justify-between text-sm py-1">
                             <span>{p.name}</span>
                             <span className="text-muted-foreground">
-                              {new Intl.NumberFormat("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                              }).format(p.price)}
+                              {formatCurrency(p.price)}
                             </span>
                           </div>
                         ))}

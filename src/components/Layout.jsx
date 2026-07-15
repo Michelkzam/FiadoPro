@@ -1,10 +1,10 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send } from "lucide-react";
-import { useState, useEffect } from "react";
-import db from "@/lib/db";
+import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { usePendingOrders } from "@/hooks/useQueries";
+import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
+import { STORE_NAME_FALLBACK } from "@/lib/constants";
 import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
@@ -23,7 +23,8 @@ export default function Layout() {
   const location = useLocation();
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [storeProfile, setStoreProfile] = useState(null);
+  const { data: profiles = [] } = useStoreProfile();
+  const storeProfile = profiles[0] || null;
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("darkMode") === "true" ||
@@ -31,10 +32,6 @@ export default function Layout() {
     }
     return false;
   });
-
-  useEffect(() => {
-    db.entities.StoreProfile.list().then((p) => { if (p[0]) setStoreProfile(p[0]); }).catch(() => {});
-  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -50,7 +47,7 @@ export default function Layout() {
         <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-muted rounded-lg">
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
-        <span className="font-semibold text-foreground">{storeProfile?.store_name || "Fiado"}</span>
+        <span className="font-semibold text-foreground">{storeProfile?.store_name || STORE_NAME_FALLBACK}</span>
         <div className="flex items-center gap-1">
           <NotificationBell />
           <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-muted rounded-lg">
@@ -65,7 +62,7 @@ export default function Layout() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setMenuOpen(false)} />
           <div className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border shadow-xl p-4 space-y-2">
             <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-foreground">{storeProfile?.store_name || "Fiado"}</span>
+              <span className="font-bold text-foreground">{storeProfile?.store_name || STORE_NAME_FALLBACK}</span>
               <button onClick={() => setMenuOpen(false)} className="p-1.5 hover:bg-muted rounded-lg">
                 <X className="w-4 h-4" />
               </button>
@@ -116,7 +113,7 @@ export default function Layout() {
                 </div>
               )}
               <div>
-                <p className="font-semibold text-foreground text-sm">{storeProfile?.store_name || "Fiado"}</p>
+                <p className="font-semibold text-foreground text-sm">{storeProfile?.store_name || STORE_NAME_FALLBACK}</p>
                 <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
               </div>
             </div>

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { ShieldCheck, LogOut, ClipboardList, History, ShoppingBag, Package, Plus, Minus, Trash2, Send, CreditCard } from "lucide-react";
 import BalanceBadge from "../components/BalanceBadge";
 import db from "@/lib/db";
-import { formatCurrency, openWhatsApp, parseDateToTimestamp } from "@/lib/constants";
+import { formatCurrency, openWhatsApp, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
 
 export default function ClientPortal() {
   const [step, setStep] = useState("login");
@@ -150,14 +150,6 @@ export default function ClientPortal() {
   }, [transactions]);
 
   const pendingOrders = useMemo(() => orders.filter((o) => !["finalizado", "recusado"].includes(o.status)), [orders]);
-
-  const orderStatusConfig = {
-    pendente: { label: "Aguardando aprovação", color: "text-amber-600 bg-amber-50 border-amber-200" },
-    aprovado: { label: "✅ Aprovado", color: "text-blue-600 bg-blue-50 border-blue-200" },
-    recusado: { label: "❌ Recusado", color: "text-red-600 bg-red-50 border-red-200" },
-    saiu_para_entrega: { label: "🚚 Saiu para entrega", color: "text-purple-600 bg-purple-50 border-purple-200" },
-    finalizado: { label: "✅ Finalizado", color: "text-green-600 bg-green-50 border-green-200" },
-  };
 
   const tabs = [
     { id: "conta", label: "Minha Conta", icon: ClipboardList },
@@ -378,7 +370,7 @@ export default function ClientPortal() {
             ) : (
               <div className="bg-card rounded-xl border border-border shadow-sm divide-y divide-border">
                 {orders.map((o) => {
-                  const statusCfg = orderStatusConfig[o.status] || orderStatusConfig.pendente;
+                  const statusCfg = ORDER_STATUS_CONFIG[o.status] || ORDER_STATUS_CONFIG.pendente;
                   return (
                     <div key={o.id} className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">

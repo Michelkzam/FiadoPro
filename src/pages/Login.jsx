@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Store, Users, ShoppingBag } from "lucide-react";
 import db from "@/lib/db";
+import { useStoreProfile } from "@/hooks/useQueries";
+import { STORE_NAME_FALLBACK } from "@/lib/constants";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,11 +13,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState("comercio");
-  const [storeProfile, setStoreProfile] = useState(null);
-
-  useEffect(() => {
-    db.entities.StoreProfile.list().then((p) => { if (p[0]) setStoreProfile(p[0]); }).catch(() => {});
-  }, []);
+  const { data: profiles = [] } = useStoreProfile();
+  const storeProfile = profiles[0] || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +44,7 @@ export default function Login() {
               <Store className="w-8 h-8 text-primary-foreground" />
             </div>
           )}
-          <h1 className="text-2xl font-bold text-foreground">{storeProfile?.store_name || "Fiado"}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{storeProfile?.store_name || STORE_NAME_FALLBACK}</h1>
           <p className="text-sm text-muted-foreground mt-1">Selecione seu perfil de acesso</p>
         </div>
 

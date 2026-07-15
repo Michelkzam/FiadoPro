@@ -1,12 +1,10 @@
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/constants";
 
 export default function BalanceBadge({ balance, size = "md" }) {
   const isDebt = balance > 0;
   const isCredit = balance < 0;
-  const formatted = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Math.abs(balance));
+  const formatted = formatCurrency(Math.abs(balance));
 
   return (
     <span
