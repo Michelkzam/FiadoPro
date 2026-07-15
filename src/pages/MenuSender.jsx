@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Send, Settings, Clock, Users, CheckCircle, XCircle,
-  Loader2, Wifi, WifiOff, Copy, Eye
+  Loader2, Wifi, WifiOff, Copy, Eye, ImageIcon, X
 } from "lucide-react";
 import { toast } from "sonner";
+import db from "@/lib/db";
 import { useMenuSender } from "@/hooks/useMenuSender";
 
 export default function MenuSender() {
@@ -38,6 +39,9 @@ export default function MenuSender() {
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [expandedSections, setExpandedSections] = useState({ schedule: false, customers: false });
+  const [menuImage, setMenuImage] = useState(null);
+  const [menuImagePreview, setMenuImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("whatsapp_config");
@@ -87,11 +91,37 @@ export default function MenuSender() {
   const confirmSend = async () => {
     setShowConfirmDialog(false);
     try {
-      await sendMenu({ customMessage, customerFilter, customerIds: selectedCustomers });
+      await sendMenu({ customMessage, customerFilter, customerIds: selectedCustomers, imageUrl: menuImagePreview });
       toast.success("Cardápio enviado com sucesso!");
     } catch (error) {
       toast.error(error.message || "Erro ao enviar cardápio");
     }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast.error("Imagem muito grande. Máximo: 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { file_url } = await db.integrations.Core.UploadFile({ file });
+      setMenuImage(file);
+      setMenuImagePreview(file_url);
+    } catch {
+      toast.error("Erro ao enviar imagem");
+    }
+    setUploadingImage(false);
+  };
+
+  const removeImage = () => {
+    setMenuImage(null);
+    setMenuImagePreview(null);
   };
 
   const handleCopyMessage = () => {
@@ -205,6 +235,43 @@ export default function MenuSender() {
                 onChange={(e) => setCustomMessage(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            <div className="bg-card rounded-xl border border-border shadow-sm p-4">
+              <h2 className="font-semibold text-foreground mb-3">Imagem do Cardápio</h2>
+              <p className="text-xs text-muted-foreground mb-3">Envie uma imagem junto com a mensagem (opcional)</p>
+              {menuImagePreview ? (
+                <div className="relative">
+                  <img src={menuImagePreview} alt="Cardápio" className="w-full max-h-48 object-cover rounded-lg" />
+                  <button
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+                  <div className="flex flex-col items-center gap-2">
+                    {uploadingImage ? (
+                      <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {uploadingImage ? "Enviando..." : "Clique para enviar imagem"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">JPG, PNG ou WebP (máx. 5MB)</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                </label>
+              )}
             </div>
           </div>
 

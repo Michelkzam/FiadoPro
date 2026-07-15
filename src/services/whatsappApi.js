@@ -47,14 +47,30 @@ export const sendTextMessage = async (phone, message) => {
   });
 };
 
-export const sendBulkMessages = async (recipients, message, onProgress) => {
+export const sendImageMessage = async (phone, imageUrl, caption = "") => {
+  const cleanPhone = phone.replace(/\D/g, "");
+  const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+
+  return sendRequest("send-image", {
+    phone: formattedPhone,
+    image: imageUrl,
+    caption,
+  });
+};
+
+export const sendBulkMessages = async (recipients, message, onProgress, imageUrl = null) => {
   const results = [];
   const total = recipients.length;
 
   for (let i = 0; i < total; i++) {
     const recipient = recipients[i];
     try {
-      const result = await sendTextMessage(recipient.phone, message);
+      let result;
+      if (imageUrl) {
+        result = await sendImageMessage(recipient.phone, imageUrl, message);
+      } else {
+        result = await sendTextMessage(recipient.phone, message);
+      }
       results.push({ success: true, phone: recipient.phone, id: recipient.id, result });
     } catch (error) {
       results.push({ success: false, phone: recipient.phone, id: recipient.id, error: error.message });

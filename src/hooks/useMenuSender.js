@@ -126,7 +126,7 @@ export function useMenuSender() {
 
   const sendMenu = useCallback(
     async (options = {}) => {
-      const { customMessage = "", customerFilter = "all", customerIds = [] } = options;
+      const { customMessage = "", customerFilter = "all", customerIds = [], imageUrl = null } = options;
 
       setSending(true);
       setProgress({ current: 0, total: 0 });
@@ -148,7 +148,8 @@ export function useMenuSender() {
         const results = await sendBulkMessages(
           recipients,
           message,
-          (current, total) => setProgress({ current, total })
+          (current, total) => setProgress({ current, total }),
+          imageUrl
         );
 
         const successful = results.filter((r) => r.success).length;
