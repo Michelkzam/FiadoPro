@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, LogOut, ClipboardList, History, ShoppingBag, Package, Plus, Minus, Trash2, Send, CreditCard } from "lucide-react";
+import { ShieldCheck, LogOut, ClipboardList, History, ShoppingBag, Package, Plus, Minus, Trash2, Send, CreditCard, Smartphone, Banknote } from "lucide-react";
 import BalanceBadge from "../components/BalanceBadge";
 import db from "@/lib/db";
 import { formatCurrency, openWhatsApp, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
@@ -26,6 +26,8 @@ export default function ClientPortal() {
   const [showCardPayment, setShowCardPayment] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
   const [cardBrand, setCardBrand] = useState("");
+  const [cartPaymentMethod, setCartPaymentMethod] = useState("");
+  const [cartCardType, setCartCardType] = useState("");
 
   const normalize = (str) => str.replace(/\D/g, "");
 
@@ -101,6 +103,15 @@ export default function ClientPortal() {
 
   const sendCartOrder = async () => {
     if (cart.length === 0 && !extraRequest.trim()) return;
+    if (!cartPaymentMethod) {
+      setError("Selecione a forma de pagamento");
+      return;
+    }
+    if (cartPaymentMethod === "cartao" && !cartCardType) {
+      setError("Selecione débito ou crédito");
+      return;
+    }
+    setError("");
     setSendingCart(true);
     const cartDesc = cart.map((i) => `${i.qty}x ${i.name} (${formatCurrency(i.price)})`).join(", ");
     const extraDesc = extraRequest.trim() ? `\nOutros: ${extraRequest.trim()}` : "";
@@ -112,9 +123,14 @@ export default function ClientPortal() {
       description: desc || "Pedido",
       amount: cartTotal,
       status: "pendente",
+      service_type: "online_entrega",
+      payment_method: cartPaymentMethod,
+      payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
     });
     setCart([]);
     setExtraRequest("");
+    setCartPaymentMethod("");
+    setCartCardType("");
     setCheckoutSent(true);
     setSendingCart(false);
     setTimeout(() => setCheckoutSent(false), 5000);
@@ -488,6 +504,54 @@ export default function ClientPortal() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="space-y-2 border-t border-border pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground">Forma de Pagamento *</p>
+                    <div className="flex gap-2">
+                      {[
+                        { value: "dinheiro", label: "Dinheiro", icon: Banknote },
+                        { value: "pix", label: "Pix", icon: Smartphone },
+                        { value: "cartao", label: "Cartão", icon: CreditCard },
+                      ].map(({ value, label, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => { setCartPaymentMethod(value); if (value !== "cartao") setCartCardType(""); setError(""); }}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                            cartPaymentMethod === value
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" /> {label}
+                        </button>
+                      ))}
+                    </div>
+                    {cartPaymentMethod === "cartao" && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCartCardType("credito")}
+                          className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-medium transition-colors ${
+                            cartCardType === "credito" ? "border-primary bg-primary/5 text-primary" : "border-border"
+                          }`}
+                        >
+                          Crédito
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCartCardType("debito")}
+                          className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-medium transition-colors ${
+                            cartCardType === "debito" ? "border-primary bg-primary/5 text-primary" : "border-border"
+                          }`}
+                        >
+                          Débito
+                        </button>
+                      </div>
+                    )}
+                    {error && <p className="text-xs text-destructive">{error}</p>}
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground">Total: {formatCurrency(cartTotal)}</span>
                     {checkoutSent ? (

@@ -5,25 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Minus, Plus, ShoppingBag, Hash } from "lucide-react";
+import { Minus, Plus, Store, Truck, Package, CreditCard, Smartphone, Banknote } from "lucide-react";
 import db from "@/lib/db";
 import { useCustomers, useActiveProducts } from "@/hooks/useQueries";
-import { formatCurrency } from "@/lib/constants";
+import { formatCurrency, SERVICE_TYPE, SERVICE_TYPE_CONFIG } from "@/lib/constants";
 
 export default function NewOrderDialog({ onClose }) {
   const queryClient = useQueryClient();
-  const [orderType, setOrderType] = useState("cliente");
+  const [serviceType, setServiceType] = useState(SERVICE_TYPE.PRESENCIAL_RETIRADA);
   const [customerId, setCustomerId] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [observations, setObservations] = useState("");
   const [checkedProducts, setCheckedProducts] = useState({});
   const [quantities, setQuantities] = useState({});
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [cardType, setCardType] = useState("");
 
   const { data: customers = [] } = useCustomers();
   const { data: products = [], isLoading: loadingProducts } = useActiveProducts();
   const activeCustomers = customers.filter((c) => c.status !== "inativo");
+
+  const isOnline = serviceType === SERVICE_TYPE.ONLINE_ENTREGA || serviceType === SERVICE_TYPE.ONLINE_RETIRADA;
+  const isMesa = serviceType === SERVICE_TYPE.PRESENCIAL_MESA;
 
   const groupedProducts = useMemo(() => {
     const groups = {};
@@ -75,31 +79,42 @@ export default function NewOrderDialog({ onClose }) {
   };
 
   const handleSubmit = () => {
-    if (orderType === "cliente" && !customerId) {
-      toast.error("Selecione um cliente");
+    if (isMesa && !tableNumber.trim()) {
+      toast.error("Informe o número da mesa");
       return;
     }
-    if (orderType === "mesa" && !tableNumber.trim()) {
-      toast.error("Informe o número da mesa");
+    if (!isMesa && !customerId) {
+      toast.error("Selecione um cliente");
       return;
     }
     if (selectedProducts.length === 0) {
       toast.error("Selecione pelo menos um produto");
       return;
     }
+    if (isOnline && !paymentMethod) {
+      toast.error("Selecione a forma de pagamento");
+      return;
+    }
+    if (isOnline && paymentMethod === "cartao" && !cardType) {
+      toast.error("Selecione débito ou crédito");
+      return;
+    }
 
-    const customerName = orderType === "mesa"
+    const customerName = isMesa
       ? `Mesa ${tableNumber.trim()}`
       : selectedCustomer?.name || "";
 
     createOrder.mutate({
-      customer_id: orderType === "mesa" ? null : customerId,
+      customer_id: isMesa ? null : customerId,
       customer_name: customerName,
       customer_phone: selectedCustomer?.phone || "",
       description: buildDescription(),
       amount: total,
       status: "pendente",
-      table_number: orderType === "mesa" ? tableNumber.trim() : null,
+      service_type: serviceType,
+      table_number: isMesa ? tableNumber.trim() : null,
+      payment_method: isOnline ? paymentMethod : null,
+      payment_card_type: isOnline && paymentMethod === "cartao" ? cardType : null,
     });
   };
 
@@ -112,50 +127,37 @@ export default function NewOrderDialog({ onClose }) {
 
         <div className="space-y-4 py-2 overflow-y-auto flex-1">
           <div className="space-y-1.5">
-            <Label>Tipo de Pedido</Label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setOrderType("cliente")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
-                  orderType === "cliente"
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                <ShoppingBag className="w-4 h-4" /> Cliente
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType("mesa")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
-                  orderType === "mesa"
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                <Hash className="w-4 h-4" /> Mesa
-              </button>
+            <Label>Tipo de Atendimento *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { type: SERVICE_TYPE.PRESENCIAL_MESA, icon: Store, label: "Presencial", sub: "Mesa" },
+                { type: SERVICE_TYPE.PRESENCIAL_RETIRADA, icon: Package, label: "Presencial", sub: "Retirada" },
+                { type: SERVICE_TYPE.ONLINE_ENTREGA, icon: Truck, label: "Online", sub: "Entrega" },
+                { type: SERVICE_TYPE.ONLINE_RETIRADA, icon: Package, label: "Online", sub: "Retirada" },
+              ].map(({ type, icon: Icon, label, sub }) => {
+                const cfg = SERVICE_TYPE_CONFIG[type];
+                const active = serviceType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setServiceType(type)}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${
+                      active
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-lg">{cfg.icon}</span>
+                    <span className={`text-xs font-semibold ${active ? "text-primary" : "text-foreground"}`}>{label}</span>
+                    <span className={`text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}>{sub}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {orderType === "cliente" ? (
-            <div className="space-y-1.5">
-              <Label>Cliente *</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeCustomers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} {c.phone ? `- ${c.phone}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
+          {isMesa ? (
             <div className="space-y-1.5">
               <Label>Número da Mesa *</Label>
               <Input
@@ -165,6 +167,22 @@ export default function NewOrderDialog({ onClose }) {
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value)}
               />
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Cliente *</Label>
+              <select
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground"
+              >
+                <option value="">Selecione um cliente...</option>
+                {activeCustomers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.phone ? `- ${c.phone}` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -247,6 +265,59 @@ export default function NewOrderDialog({ onClose }) {
               rows={2}
             />
           </div>
+
+          {isOnline && (
+            <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+              <p className="text-xs font-semibold text-blue-700 uppercase">Forma de Pagamento *</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "dinheiro", label: "Dinheiro", icon: Banknote },
+                  { value: "pix", label: "Pix", icon: Smartphone },
+                  { value: "cartao", label: "Cartão", icon: CreditCard },
+                ].map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => { setPaymentMethod(value); if (value !== "cartao") setCardType(""); }}
+                    className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all ${
+                      paymentMethod === value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${paymentMethod === value ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium ${paymentMethod === value ? "text-primary" : "text-foreground"}`}>{label}</span>
+                  </button>
+                ))}
+              </div>
+              {paymentMethod === "cartao" && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCardType("credito")}
+                    className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                      cardType === "credito"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    Crédito
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCardType("debito")}
+                    className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                      cardType === "debito"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    Débito
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {total > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">

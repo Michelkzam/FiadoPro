@@ -10,6 +10,20 @@ export const COMANDA_STATUS_CONFIG = {
   [COMANDA_STATUS.PAGA]: { label: "Paga", color: "text-blue-600 bg-blue-50 border-blue-200" },
 };
 
+export const SERVICE_TYPE = {
+  PRESENCIAL_MESA: "presencial_mesa",
+  PRESENCIAL_RETIRADA: "presencial_retirada",
+  ONLINE_ENTREGA: "online_entrega",
+  ONLINE_RETIRADA: "online_retirada",
+};
+
+export const SERVICE_TYPE_CONFIG = {
+  [SERVICE_TYPE.PRESENCIAL_MESA]: { label: "Presencial — Mesa", color: "text-purple-600 bg-purple-50 border-purple-200", icon: "🍽️" },
+  [SERVICE_TYPE.PRESENCIAL_RETIRADA]: { label: "Presencial — Retirada", color: "text-orange-600 bg-orange-50 border-orange-200", icon: "🛒" },
+  [SERVICE_TYPE.ONLINE_ENTREGA]: { label: "Online — Entrega", color: "text-blue-600 bg-blue-50 border-blue-200", icon: "🚚" },
+  [SERVICE_TYPE.ONLINE_RETIRADA]: { label: "Online — Retirada", color: "text-teal-600 bg-teal-50 border-teal-200", icon: "📦" },
+};
+
 export const ORDER_STATUS = {
   PENDENTE: "pendente",
   APROVADO: "aprovado",
