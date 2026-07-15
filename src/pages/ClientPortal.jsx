@@ -7,6 +7,7 @@ import BalanceBadge from "../components/BalanceBadge";
 import db from "@/lib/db";
 import { formatCurrency, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
+import { toast } from "sonner";
 
 export default function ClientPortal() {
   const [step, setStep] = useState("login");
@@ -26,7 +27,9 @@ export default function ClientPortal() {
   const [storeProfile, setStoreProfile] = useState(null);
   const [showCardPayment, setShowCardPayment] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
+  const [showCashPayment, setShowCashPayment] = useState(false);
   const [cardBrand, setCardBrand] = useState("");
+  const [cardType, setCardType] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
   const [cartCardType, setCartCardType] = useState("");
 
@@ -265,49 +268,124 @@ export default function ClientPortal() {
 
             <div className="bg-card rounded-xl border border-border shadow-sm p-4 space-y-3">
               <p className="font-semibold text-foreground text-sm">Pagar Minha Conta</p>
-              <div className="grid grid-cols-2 gap-2">
+              <p className="text-xs text-muted-foreground">Saldo: <strong className="text-foreground">{formatCurrency(customer.balance || 0)}</strong></p>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showCashPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
+                  onClick={() => { setShowCashPayment(!showCashPayment); setShowCardPayment(false); setShowPixPayment(false); setCardType(""); setCardBrand(""); }}
+                >
+                  💵 Dinheiro
+                </button>
                 <button
                   className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showCardPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
-                  onClick={() => { setShowCardPayment(!showCardPayment); setShowPixPayment(false); }}
+                  onClick={() => { setShowCardPayment(!showCardPayment); setShowCashPayment(false); setShowPixPayment(false); setCardType(""); setCardBrand(""); }}
                 >
                   <CreditCard className="w-4 h-4 text-blue-500" /> Cartão
                 </button>
                 <button
                   className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showPixPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
-                  onClick={() => { setShowPixPayment(!showPixPayment); setShowCardPayment(false); }}
+                  onClick={() => { setShowPixPayment(!showPixPayment); setShowCashPayment(false); setShowCardPayment(false); setCardType(""); setCardBrand(""); }}
                 >
                   <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"/></svg>
                   Pix
                 </button>
               </div>
 
-              {showCardPayment && (
+              {showCashPayment && (
                 <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs font-medium text-foreground">Selecione a bandeira do cartão:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
-                      <button
-                        key={brand}
-                        type="button"
-                        onClick={() => setCardBrand(brand)}
-                        className={`py-2 px-3 rounded-lg text-xs font-medium border transition-colors ${cardBrand === brand ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
-                      >
-                        {brand}
-                      </button>
-                    ))}
-                  </div>
-                  {cardBrand && (
+                  <p className="text-xs font-medium text-foreground">Como deseja pagar?</p>
+                  <button
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      if (storeProfile?.phone) {
+                        const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} em dinheiro.`;
+                        sendWhatsApp(storeProfile.phone, msg);
+                      }
+                    }}
+                  >
+                    <span className="text-sm font-medium">💵 Pagar em Dinheiro</span>
+                    <span className="text-xs text-muted-foreground">Confirmar no WhatsApp</span>
+                  </button>
+                  {(customer.credit_limit || 0) > 0 && (
                     <button
-                      className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
                       onClick={() => {
                         if (storeProfile?.phone) {
-                          const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} no cartão ${cardBrand}.`;
+                          const msg = `Olá! Sou ${customer.name} e gostaria de usar meu crédito de ${formatCurrency(customer.credit_limit)} para quitar minha conta de ${formatCurrency(customer.balance || 0)}.`;
                           sendWhatsApp(storeProfile.phone, msg);
                         }
                       }}
                     >
-                      Confirmar pagamento com {cardBrand}
+                      <div className="text-left">
+                        <span className="text-sm font-medium text-blue-700">💳 Usar Crédito na Conta</span>
+                        <p className="text-xs text-blue-600">Limite disponível: {formatCurrency(customer.credit_limit)}</p>
+                      </div>
+                      <span className="text-xs text-blue-500">Quitar conta</span>
                     </button>
+                  )}
+                </div>
+              )}
+
+              {showCardPayment && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  {!cardType ? (
+                    <>
+                      <p className="text-xs font-medium text-foreground">Tipo de cartão:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCardType("credito")}
+                          className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                        >
+                          <CreditCard className="w-4 h-4 text-blue-500" />
+                          <span className="text-sm font-medium">Crédito</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardType("debito")}
+                          className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                        >
+                          <CreditCard className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium">Débito</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium text-foreground">
+                          Cartão de {cardType === "credito" ? "Crédito" : "Débito"} — Bandeira:
+                        </p>
+                        <button onClick={() => setCardType("")} className="text-xs text-primary hover:underline">Trocar</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
+                          <button
+                            key={brand}
+                            type="button"
+                            onClick={() => setCardBrand(brand)}
+                            className={`py-2 px-3 rounded-lg text-xs font-medium border transition-colors ${cardBrand === brand ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                          >
+                            {brand}
+                          </button>
+                        ))}
+                      </div>
+                      {cardBrand && (
+                        <button
+                          className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+                          onClick={() => {
+                            if (storeProfile?.phone) {
+                              const tipo = cardType === "credito" ? "crédito" : "débito";
+                              const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} no cartão de ${tipo} ${cardBrand}.`;
+                              sendWhatsApp(storeProfile.phone, msg);
+                            }
+                          }}
+                        >
+                          Confirmar pagamento com {cardBrand} ({cardType === "credito" ? "Crédito" : "Débito"})
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -316,16 +394,32 @@ export default function ClientPortal() {
                 <div className="space-y-3 pt-2 border-t border-border">
                   <p className="text-xs font-medium text-foreground">Chaves Pix do estabelecimento:</p>
                   {storeProfile?.pix_key_1 ? (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 space-y-1">
-                      <p className="text-xs text-green-700 font-semibold">Chave Pix Principal</p>
-                      <p className="text-sm font-mono font-bold text-green-800 break-all">{storeProfile.pix_key_1}</p>
-                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
+                      className="w-full bg-green-50 border border-green-200 rounded-xl p-3 text-left hover:bg-green-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-green-700 font-semibold">Chave Pix Principal</p>
+                          <p className="text-sm font-mono font-bold text-green-800 break-all">{storeProfile.pix_key_1}</p>
+                        </div>
+                        <span className="text-xs text-green-600 shrink-0">📋 Copiar</span>
+                      </div>
+                    </button>
                   ) : null}
                   {storeProfile?.pix_key_2 ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-1">
-                      <p className="text-xs text-blue-700 font-semibold">Chave Pix Secundária</p>
-                      <p className="text-sm font-mono font-bold text-blue-800 break-all">{storeProfile.pix_key_2}</p>
-                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_2); toast.success("Chave Pix copiada!"); }}
+                      className="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-left hover:bg-blue-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-blue-700 font-semibold">Chave Pix Secundária</p>
+                          <p className="text-sm font-mono font-bold text-blue-800 break-all">{storeProfile.pix_key_2}</p>
+                        </div>
+                        <span className="text-xs text-blue-600 shrink-0">📋 Copiar</span>
+                      </div>
+                    </button>
                   ) : null}
                   {!storeProfile?.pix_key_1 && !storeProfile?.pix_key_2 && (
                     <p className="text-xs text-muted-foreground text-center py-2">Chaves Pix não cadastradas. Entre em contato com o estabelecimento.</p>
