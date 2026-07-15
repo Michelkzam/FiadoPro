@@ -191,6 +191,8 @@ export const entities = {
   Product: createEntityService("products"),
   StoreProfile: createEntityService("store_profiles"),
   MenuSendHistory: createEntityService("menu_send_history"),
+  Comanda: createEntityService("comandas"),
+  ComandaItem: createEntityService("comanda_items"),
 };
 
 export { ApiError, clearTokens, storeTokens, getStoredToken };

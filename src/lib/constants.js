@@ -1,3 +1,15 @@
+export const COMANDA_STATUS = {
+  ABERTA: "aberta",
+  FECHADA: "fechada",
+  PAGA: "paga",
+};
+
+export const COMANDA_STATUS_CONFIG = {
+  [COMANDA_STATUS.ABERTA]: { label: "Aberta", color: "text-green-600 bg-green-50 border-green-200" },
+  [COMANDA_STATUS.FECHADA]: { label: "Fechada", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+  [COMANDA_STATUS.PAGA]: { label: "Paga", color: "text-blue-600 bg-blue-50 border-blue-200" },
+};
+
 export const ORDER_STATUS = {
   PENDENTE: "pendente",
   APROVADO: "aprovado",

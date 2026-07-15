@@ -69,3 +69,29 @@ export function useStoreProfile() {
     queryFn: () => db.entities.StoreProfile.list(),
   });
 }
+
+export function useComandas(tableNumber) {
+  return useQuery({
+    queryKey: tableNumber ? ["comandas", tableNumber] : ["comandas"],
+    queryFn: () =>
+      tableNumber
+        ? db.entities.Comanda.filter({ table_number: tableNumber }, "-created_at", 100)
+        : db.entities.Comanda.list("-created_at", 500),
+  });
+}
+
+export function useComanda(comandaId) {
+  return useQuery({
+    queryKey: ["comanda", comandaId],
+    queryFn: () => db.entities.Comanda.get(comandaId),
+    enabled: !!comandaId,
+  });
+}
+
+export function useComandaItems(comandaId) {
+  return useQuery({
+    queryKey: ["comanda_items", comandaId],
+    queryFn: () => db.entities.ComandaItem.filter({ comanda_id: comandaId }, "-created_at", 200),
+    enabled: !!comandaId,
+  });
+}

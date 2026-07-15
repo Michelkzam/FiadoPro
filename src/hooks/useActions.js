@@ -182,3 +182,101 @@ export function useOrderActions() {
 
   return { approveOrder, updateOrderStatus, loading };
 }
+
+export function useComandaActions() {
+  const [loading, setLoading] = useState(false);
+
+  const addItem = useCallback(async (comandaId, item) => {
+    setLoading(true);
+    try {
+      const subtotal = (item.quantity || 1) * (item.unit_price || 0);
+      await db.entities.ComandaItem.create({
+        comanda_id: comandaId,
+        product_id: item.product_id || null,
+        product_name: item.product_name,
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        subtotal,
+        notes: item.notes || "",
+        status: "pendente",
+      });
+
+      const comanda = await db.entities.Comanda.get(comandaId);
+      const newTotal = (comanda.total || 0) + subtotal;
+      await db.entities.Comanda.update(comandaId, { total: newTotal });
+
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeItem = useCallback(async (itemId, comandaId) => {
+    setLoading(true);
+    try {
+      const item = await db.entities.ComandaItem.get(itemId);
+      await db.entities.ComandaItem.delete(itemId);
+
+      if (comandaId) {
+        const comanda = await db.entities.Comanda.get(comandaId);
+        const newTotal = Math.max(0, (comanda.total || 0) - (item.subtotal || 0));
+        await db.entities.Comanda.update(comandaId, { total: newTotal });
+      }
+
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateItemStatus = useCallback(async (itemId, status) => {
+    await db.entities.ComandaItem.update(itemId, { status });
+  }, []);
+
+  const closeComanda = useCallback(async (comandaId, paymentMethod = null) => {
+    setLoading(true);
+    try {
+      const comanda = await db.entities.Comanda.get(comandaId);
+      if (!comanda) throw new Error("Comanda não encontrada");
+
+      const updates = { status: "fechada" };
+      if (paymentMethod) {
+        updates.payment_method = paymentMethod;
+        updates.status = "paga";
+      }
+      await db.entities.Comanda.update(comandaId, updates);
+
+      if (comanda.customer_id && comanda.total > 0) {
+        const customer = await db.entities.Customer.get(comanda.customer_id);
+        if (customer) {
+          const currentBalance = customer.balance || 0;
+          const newBalance = currentBalance + comanda.total;
+          const now = new Date();
+          const { format: formatDate } = await import("date-fns");
+
+          await db.entities.Transaction.create({
+            customer_id: comanda.customer_id,
+            customer_name: comanda.customer_name || customer.name,
+            type: "compra",
+            amount: comanda.total,
+            date: formatDate(now, "dd/MM/yyyy"),
+            time: formatDate(now, "HH:mm"),
+            description: `Comanda Mesa ${comanda.table_number} - ${comanda.label}`,
+          });
+
+          await db.entities.Customer.update(comanda.customer_id, { balance: newBalance });
+        }
+      }
+
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const reopenComanda = useCallback(async (comandaId) => {
+    await db.entities.Comanda.update(comandaId, { status: "aberta", payment_method: null });
+  }, []);
+
+  return { addItem, removeItem, updateItemStatus, closeComanda, reopenComanda, loading };
+}

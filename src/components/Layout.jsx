@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -9,6 +9,7 @@ import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/mesas", label: "Mesas", icon: Table },
   { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/compras", label: "Compras", icon: ShoppingCart },
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
