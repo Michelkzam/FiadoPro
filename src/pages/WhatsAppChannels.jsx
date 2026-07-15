@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Send, Users, Clock, Settings, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Send, Users, Clock, Settings, Trash2 } from "lucide-react";
 import db from "@/lib/db";
 import { useCanaisWhatsApp, useClientesCanal, useHistoricoEnvios } from "@/hooks/useQueries";
 
@@ -81,14 +80,8 @@ export default function WhatsAppChannels() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Canais WhatsApp</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Envie cardápios via Meta Cloud API</p>
-          </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Envie cardápios via Meta Cloud API</p>
         </div>
         <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
           <Plus className="w-4 h-4" /> Novo Canal

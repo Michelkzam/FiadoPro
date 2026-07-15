@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect, useRef } from "react";
-import { Save, Upload, Store, Bell, Landmark } from "lucide-react";
+import { Save, Upload, Bell, Landmark } from "lucide-react";
 import { toast } from "sonner";
 import LoadingSpinner from "../components/LoadingSpinner";
 import db from "@/lib/db";
@@ -77,11 +77,6 @@ export default function StoreProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Store className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Perfil da Loja</h1>
-      </div>
-
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(form); }} className="space-y-6">
         <div className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-4">
           <h2 className="font-semibold text-foreground">Informações da Loja</h2>

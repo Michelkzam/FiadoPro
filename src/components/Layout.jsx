@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, MessageCircle } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, MessageCircle, Settings, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -10,21 +10,86 @@ import NotificationBell from "@/components/NotificationBell";
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/mesas", label: "Mesas", icon: Table },
-  { path: "/whatsapp", label: "Canais WhatsApp", icon: MessageCircle },
   { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/compras", label: "Compras", icon: ShoppingCart },
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
   { path: "/produtos", label: "Produtos", icon: Package },
   { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
-  { path: "/loja", label: "Minha Loja", icon: Store },
   { path: "/historico", label: "Histórico", icon: History },
   { path: "/relatorios", label: "Relatórios", icon: FileText },
 ];
+
+const settingsItems = [
+  { path: "/configuracoes?tab=loja", label: "Minha Loja", icon: Store },
+  { path: "/configuracoes?tab=whatsapp", label: "Canais WhatsApp", icon: MessageCircle },
+];
+
+function NavItem({ item, isActive, badge, onClick }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {item.label}
+      {badge > 0 && (
+        <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function SettingsGroup({ isActive, isOpen, onToggle, onClickLink }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full ${
+          isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+        }`}
+      >
+        <Settings className="w-4 h-4" />
+        Configurações
+        <span className="ml-auto">
+          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="ml-4 mt-1 space-y-1 border-l border-border pl-3">
+          {settingsItems.map((item) => {
+            const Icon = item.icon;
+            const active = location.pathname === "/configuracoes" && window.location.search.includes(item.path.split("?")[1]);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onClickLink}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout() {
   const location = useLocation();
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { data: profiles = [] } = useStoreProfile();
   const storeProfile = profiles[0] || null;
   const [darkMode, setDarkMode] = useState(() => {
@@ -41,6 +106,28 @@ export default function Layout() {
   }, [darkMode]);
 
   const { data: pendingOrders = [] } = usePendingOrders();
+
+  const isSettingsPage = location.pathname === "/configuracoes";
+
+  const renderNav = (onClickLink) => (
+    <>
+      {navItems.map((item) => (
+        <NavItem
+          key={item.path}
+          item={item}
+          isActive={location.pathname === item.path}
+          badge={item.path === "/pedidos" ? pendingOrders.length : 0}
+          onClick={onClickLink}
+        />
+      ))}
+      <SettingsGroup
+        isActive={isSettingsPage}
+        isOpen={settingsOpen || isSettingsPage}
+        onToggle={() => setSettingsOpen(!settingsOpen)}
+        onClickLink={onClickLink}
+      />
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-background font-inter">
@@ -69,29 +156,7 @@ export default function Layout() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              const badge = item.path === "/pedidos" ? pendingOrders.length : 0;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                  {badge > 0 && (
-                    <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">
-                      {badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+            {renderNav(() => setMenuOpen(false))}
             <button
               onClick={() => { logout(); setMenuOpen(false); }}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 w-full mt-4"
@@ -121,29 +186,8 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="flex-1 p-3 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              const badge = item.path === "/pedidos" ? pendingOrders.length : 0;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                  {badge > 0 && (
-                    <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">
-                      {badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            {renderNav()}
           </nav>
 
           <div className="p-3 border-t border-border space-y-2">

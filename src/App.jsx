@@ -24,6 +24,7 @@ const FinancialHistory = lazy(() => import("./pages/FinancialHistory"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Mesas = lazy(() => import("./pages/Mesas"));
 const WhatsAppChannels = lazy(() => import("./pages/WhatsAppChannels"));
+const Settings = lazy(() => import("./pages/Settings"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -70,13 +71,12 @@ const AuthenticatedApp = () => {
             <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/mesas" element={<Mesas />} />
-            <Route path="/whatsapp" element={<WhatsAppChannels />} />
+            <Route path="/configuracoes" element={<Settings />} />
             <Route path="/clientes" element={<Customers />} />
             <Route path="/clientes/novo" element={<NewCustomer />} />
             <Route path="/clientes/:id" element={<CustomerDetail />} />
             <Route path="/clientes/:id/editar" element={<EditCustomer />} />
             <Route path="/clientes/:id/transacao" element={<NewTransaction />} />
-            <Route path="/loja" element={<StoreProfilePage />} />
             <Route path="/compras" element={<Purchases />} />
             <Route path="/pedidos" element={<Orders />} />
             <Route path="/produtos" element={<Products />} />
