@@ -157,6 +157,21 @@ export default function ClientPortal() {
       setError("Selecione débito ou crédito");
       return;
     }
+
+    if (cartPaymentMethod === "dinheiro" && (customer.credit_limit || 0) > 0) {
+      const currentBalance = customer.balance || 0;
+      const newBalance = currentBalance + cartTotal;
+      if (newBalance > customer.credit_limit) {
+        setError(`Limite de crédito excedido! Seu limite é ${formatCurrency(customer.credit_limit)} e o novo saldo seria ${formatCurrency(newBalance)}. Aguarde liberação do lojista.`);
+        if (storeProfile?.phone) {
+          const msg = `⚠️ ${customer.name} tentou fazer compra de ${formatCurrency(cartTotal)} que excede o limite de crédito.\nLimite: ${formatCurrency(customer.credit_limit)}\nSaldo atual: ${formatCurrency(currentBalance)}\nNovo saldo seria: ${formatCurrency(newBalance)}\n\nLibere a compra no painel.`;
+          sendWhatsApp(storeProfile.phone, msg);
+        }
+        setSendingCart(false);
+        return;
+      }
+    }
+
     setError("");
     setSendingCart(true);
     const cartDesc = cart.map((i) => `${i.qty}x ${i.name} (${formatCurrency(i.price)})`).join(", ");
@@ -191,6 +206,8 @@ export default function ClientPortal() {
       const currentCustomer = await db.entities.Customer.get(customer.id);
       const newBalance = (currentCustomer.balance || 0) + cartTotal;
       await db.entities.Customer.update(customer.id, { balance: newBalance });
+
+      setCustomer((prev) => ({ ...prev, balance: newBalance }));
 
       if (storeProfile?.phone) {
         const msg = `Pedido registrado! Valor: ${formatCurrency(cartTotal)}\nSaldo devedor: ${formatCurrency(newBalance)}`;
@@ -380,6 +397,20 @@ export default function ClientPortal() {
               <BalanceBadge balance={customer.balance || 0} size="lg" />
               {(customer.balance || 0) < 0 && (
                 <p className="text-xs text-blue-600 mt-2">🎉 Você tem crédito disponível para sua próxima compra!</p>
+              )}
+              {(customer.credit_limit || 0) > 0 && (customer.balance || 0) > customer.credit_limit && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs font-semibold text-amber-700">⚠️ Saldo acima do limite de crédito</p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Limite: {formatCurrency(customer.credit_limit)} | Saldo: {formatCurrency(customer.balance || 0)}
+                  </p>
+                  <p className="text-xs text-amber-500 mt-1">Aguarde liberação do lojista para novas compras</p>
+                </div>
+              )}
+              {(customer.credit_limit || 0) > 0 && (customer.balance || 0) <= customer.credit_limit && (customer.balance || 0) > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Limite: {formatCurrency(customer.credit_limit)} | Disponível: {formatCurrency(customer.credit_limit - (customer.balance || 0))}
+                </p>
               )}
             </div>
 
