@@ -8,6 +8,8 @@ import db from "@/lib/db";
 import { formatCurrency, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import { generatePixPayload } from "@/utils/pixUtils";
 
 export default function ClientPortal() {
   const [step, setStep] = useState("login");
@@ -394,32 +396,66 @@ export default function ClientPortal() {
                 <div className="space-y-3 pt-2 border-t border-border">
                   <p className="text-xs font-medium text-foreground">Chaves Pix do estabelecimento:</p>
                   {storeProfile?.pix_key_1 ? (
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
-                      className="w-full bg-green-50 border border-green-200 rounded-xl p-3 text-left hover:bg-green-100 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-green-700 font-semibold">Chave Pix Principal</p>
-                          <p className="text-sm font-mono font-bold text-green-800 break-all">{storeProfile.pix_key_1}</p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
+                        className="w-full bg-green-50 border border-green-200 rounded-xl p-3 text-left hover:bg-green-100 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-green-700 font-semibold">Chave Pix Principal</p>
+                            <p className="text-sm font-mono font-bold text-green-800 break-all">{storeProfile.pix_key_1}</p>
+                          </div>
+                          <span className="text-xs text-green-600 shrink-0">📋 Copiar</span>
                         </div>
-                        <span className="text-xs text-green-600 shrink-0">📋 Copiar</span>
+                      </button>
+                      <div className="bg-white border border-green-200 rounded-xl p-4 flex flex-col items-center">
+                        <QRCodeSVG
+                          value={generatePixPayload({
+                            key: storeProfile.pix_key_1,
+                            amount: (customer.balance || 0).toFixed(2),
+                            merchantName: storeProfile.store_name || "Loja",
+                            merchantCity: storeProfile.city || "SAO PAULO",
+                          })}
+                          size={180}
+                          level="M"
+                          includeMargin={true}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
+                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(customer.balance || 0)}</p>
                       </div>
-                    </button>
+                    </div>
                   ) : null}
                   {storeProfile?.pix_key_2 ? (
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_2); toast.success("Chave Pix copiada!"); }}
-                      className="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-left hover:bg-blue-100 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-blue-700 font-semibold">Chave Pix Secundária</p>
-                          <p className="text-sm font-mono font-bold text-blue-800 break-all">{storeProfile.pix_key_2}</p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_2); toast.success("Chave Pix copiada!"); }}
+                        className="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-left hover:bg-blue-100 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-blue-700 font-semibold">Chave Pix Secundária</p>
+                            <p className="text-sm font-mono font-bold text-blue-800 break-all">{storeProfile.pix_key_2}</p>
+                          </div>
+                          <span className="text-xs text-blue-600 shrink-0">📋 Copiar</span>
                         </div>
-                        <span className="text-xs text-blue-600 shrink-0">📋 Copiar</span>
+                      </button>
+                      <div className="bg-white border border-blue-200 rounded-xl p-4 flex flex-col items-center">
+                        <QRCodeSVG
+                          value={generatePixPayload({
+                            key: storeProfile.pix_key_2,
+                            amount: (customer.balance || 0).toFixed(2),
+                            merchantName: storeProfile.store_name || "Loja",
+                            merchantCity: storeProfile.city || "SAO PAULO",
+                          })}
+                          size={180}
+                          level="M"
+                          includeMargin={true}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
+                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(customer.balance || 0)}</p>
                       </div>
-                    </button>
+                    </div>
                   ) : null}
                   {!storeProfile?.pix_key_1 && !storeProfile?.pix_key_2 && (
                     <p className="text-xs text-muted-foreground text-center py-2">Chaves Pix não cadastradas. Entre em contato com o estabelecimento.</p>
