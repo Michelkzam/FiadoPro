@@ -35,7 +35,7 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
         }
       }
 
-      const label = data.comanda_name.trim() || `Mesa ${data.table_number} - ${data.name}`;
+      const label = data.comanda_name.trim() || `${data.name}`;
 
       return db.entities.Comanda.create({
         table_number: data.table_number,
@@ -55,6 +55,10 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
   });
 
   const handleSubmit = () => {
+    if (!comandaName.trim()) {
+      toast.error("Informe o nome da comanda");
+      return;
+    }
     if (!tableNumber.trim()) {
       toast.error("Informe o número da mesa");
       return;
@@ -71,10 +75,6 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
     });
   };
 
-  const previewLabel = comandaName.trim() || (tableNumber.trim() && name.trim()
-    ? `Mesa ${tableNumber.trim()} - ${name.trim()}`
-    : "");
-
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-sm">
@@ -83,6 +83,15 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Nome da Comanda *</Label>
+            <Input
+              placeholder="Ex: Confraternização, Aniversário, João..."
+              value={comandaName}
+              onChange={(e) => setComandaName(e.target.value)}
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label>Número da Mesa *</Label>
             <Input
@@ -101,20 +110,6 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Nome da Comanda</Label>
-            <Input
-              placeholder="Ex: Confraternização, Aniversário..."
-              value={comandaName}
-              onChange={(e) => setComandaName(e.target.value)}
-            />
-            {previewLabel && (
-              <p className="text-xs text-muted-foreground">
-                Como aparecerá: <span className="font-medium text-foreground">{previewLabel}</span>
-              </p>
-            )}
           </div>
 
           <div className="space-y-1.5">
