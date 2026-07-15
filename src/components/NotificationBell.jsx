@@ -9,61 +9,43 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [showPanel, setShowPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const channelRef = useRef(null);
+  const lastCountRef = useRef(0);
 
   useEffect(() => {
     fetchNotifications();
-
-    const setupChannel = async () => {
-      if (channelRef.current) {
-        await supabase.removeChannel(channelRef.current);
-      }
-
-      const channel = supabase.channel("notifications-changes");
-
-      channel.on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        (payload) => {
-          setNotifications((prev) => [payload.new, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-          if (Notification.permission === "granted") {
-            try {
-              new Notification(payload.new.title, {
-                body: payload.new.body,
-                icon: "/favicon.svg",
-                tag: payload.new.tag || `notif-${payload.new.id}`,
-              });
-            } catch {
-              // notification failed silently
-            }
-          }
-        }
-      );
-
-      await channel.subscribe();
-      channelRef.current = channel;
-    };
-
-    setupChannel();
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) {
-      setNotifications(data);
-      setUnreadCount(data.filter((n) => !n.read).length);
+    try {
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (data) {
+        setNotifications(data);
+        const newUnread = data.filter((n) => !n.read).length;
+        if (newUnread > lastCountRef.current && Notification.permission === "granted") {
+          const newest = data.find((n) => !n.read);
+          if (newest) {
+            try {
+              new Notification(newest.title, {
+                body: newest.body,
+                icon: "/favicon.svg",
+                tag: newest.tag || `notif-${newest.id}`,
+              });
+            } catch {
+              // silent
+            }
+          }
+        }
+        lastCountRef.current = newUnread;
+        setUnreadCount(newUnread);
+      }
+    } catch {
+      // silent
     }
   };
 
