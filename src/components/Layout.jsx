@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import db from "@/lib/db";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders } from "@/hooks/useQueries";
+import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -50,9 +51,12 @@ export default function Layout() {
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
         <span className="font-semibold text-foreground">{storeProfile?.store_name || "Fiado"}</span>
-        <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-muted rounded-lg">
-          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-muted rounded-lg">
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile menu overlay */}
@@ -144,6 +148,10 @@ export default function Layout() {
           </nav>
 
           <div className="p-3 border-t border-border space-y-2">
+            <div className="flex items-center justify-between px-3 py-1">
+              <span className="text-xs text-muted-foreground font-medium">Notificações</span>
+              <NotificationBell />
+            </div>
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted w-full"

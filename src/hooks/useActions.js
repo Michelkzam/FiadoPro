@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import db from "@/lib/db";
 import { formatCurrency, openWhatsApp, sanitizePhone } from "@/lib/constants";
+import { notifyPaymentReceived } from "@/lib/notify";
 
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 100;
@@ -64,6 +65,11 @@ export function useTransactionActions(customer) {
       if (!customer?.phone || !transactionResult) return;
 
       const { newBalance, type, amount } = transactionResult;
+
+      if (type === "pagamento") {
+        notifyPaymentReceived(customer.name, amount);
+      }
+
       const hora =
         new Date().getHours() < 12
           ? "Bom dia"

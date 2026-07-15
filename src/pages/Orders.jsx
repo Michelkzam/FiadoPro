@@ -11,6 +11,7 @@ import db from "@/lib/db";
 import { useOrders } from "@/hooks/useQueries";
 import { useOrderActions } from "@/hooks/useActions";
 import { formatCurrency, ORDER_STATUS, ORDER_STATUS_CONFIG } from "@/lib/constants";
+import { notifyNewOrder } from "@/lib/notify";
 
 const todayStr = () => new Date().toLocaleDateString("pt-BR");
 
@@ -28,6 +29,9 @@ export default function Orders() {
     const unsubscribe = db.entities.Order.subscribe((event) => {
       if (event.type === "create") {
         toast.info(`Novo pedido de ${event.data?.customer_name || "cliente"}!`);
+        if (event.data) {
+          notifyNewOrder(event.data);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     });

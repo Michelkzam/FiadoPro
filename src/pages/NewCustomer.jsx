@@ -8,6 +8,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import db from "@/lib/db";
 import { generateAccessCode, openWhatsApp } from "@/lib/constants";
+import { notifyNewCustomer } from "@/lib/notify";
 
 export default function NewCustomer() {
   const navigate = useNavigate();
@@ -35,7 +36,11 @@ export default function NewCustomer() {
     mutationFn: (data) => {
       const code = generateAccessCode();
       return db.entities.Customer.create({ ...data, balance: 0, status: "ativo", access_code: code })
-        .then((created) => { sendWhatsApp(created, created.access_code || code); return created; });
+        .then((created) => {
+          sendWhatsApp(created, created.access_code || code);
+          notifyNewCustomer(created.name);
+          return created;
+        });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
