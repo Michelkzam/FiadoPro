@@ -95,3 +95,31 @@ export function useComandaItems(comandaId) {
     enabled: !!comandaId,
   });
 }
+
+export function useCanaisWhatsApp() {
+  return useQuery({
+    queryKey: ["canais_whatsapp"],
+    queryFn: () => db.entities.CanalWhatsApp.list("-criado_em", 100),
+  });
+}
+
+export function useClientesCanal(canalId) {
+  return useQuery({
+    queryKey: canalId ? ["clientes_canal", canalId] : ["clientes_canal"],
+    queryFn: () =>
+      canalId
+        ? db.entities.ClienteCanal.filter({ canal_id: canalId }, "-criado_em", 500)
+        : db.entities.ClienteCanal.list("-criado_em", 1000),
+    enabled: !!canalId,
+  });
+}
+
+export function useHistoricoEnvios(canalId) {
+  return useQuery({
+    queryKey: canalId ? ["historico_envios", canalId] : ["historico_envios"],
+    queryFn: () =>
+      canalId
+        ? db.entities.HistoricoEnvios.filter({ canal_id: canalId }, "-criado_em", 50)
+        : db.entities.HistoricoEnvios.list("-criado_em", 100),
+  });
+}

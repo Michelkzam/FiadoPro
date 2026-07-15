@@ -23,6 +23,7 @@ const MenuSender = lazy(() => import("./pages/MenuSender"));
 const FinancialHistory = lazy(() => import("./pages/FinancialHistory"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Mesas = lazy(() => import("./pages/Mesas"));
+const WhatsAppChannels = lazy(() => import("./pages/WhatsAppChannels"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
             <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/mesas" element={<Mesas />} />
+            <Route path="/whatsapp" element={<WhatsAppChannels />} />
             <Route path="/clientes" element={<Customers />} />
             <Route path="/clientes/novo" element={<NewCustomer />} />
             <Route path="/clientes/:id" element={<CustomerDetail />} />

@@ -193,6 +193,9 @@ export const entities = {
   MenuSendHistory: createEntityService("menu_send_history"),
   Comanda: createEntityService("comandas"),
   ComandaItem: createEntityService("comanda_items"),
+  CanalWhatsApp: createEntityService("canais_whatsapp"),
+  ClienteCanal: createEntityService("clientes_canal"),
+  HistoricoEnvios: createEntityService("historico_envios"),
 };
 
 export { ApiError, clearTokens, storeTokens, getStoredToken };
