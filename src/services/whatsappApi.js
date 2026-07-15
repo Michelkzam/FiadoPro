@@ -1,14 +1,28 @@
 const ZAPI_BASE_URL = "https://api.z-api.io/v1";
-const DEFAULT_INSTANCE = "";
-const DEFAULT_TOKEN = "";
+const STORAGE_KEY = "whatsapp_config";
 
 let config = {
-  instanceId: DEFAULT_INSTANCE,
-  token: DEFAULT_TOKEN,
+  instanceId: "",
+  token: "",
 };
+
+const loadSavedConfig = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.instanceId && parsed.token) {
+        config = { instanceId: parsed.instanceId, token: parsed.token };
+      }
+    }
+  } catch {}
+};
+
+loadSavedConfig();
 
 export const configureWhatsApp = (instanceId, token) => {
   config = { instanceId, token };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ instanceId, token }));
 };
 
 export const getConfig = () => ({ ...config });
