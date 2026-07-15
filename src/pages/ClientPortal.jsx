@@ -54,14 +54,10 @@ export default function ClientPortal() {
         return;
       }
 
-      const matchingCustomers = await db.entities.Customer.filter(
-        { cpf: cpf.trim() },
-        "-created_date",
-        10
-      );
+      const matchingCustomers = await db.entities.Customer.list("-created_at", 1000);
 
       const found = matchingCustomers.find(
-        (c) => normalize(c.cpf) === normalizedCpf && c.access_code === accessCode
+        (c) => normalize(c.cpf) === normalizedCpf && c.access_code?.toUpperCase() === accessCode
       );
 
       if (found) {
