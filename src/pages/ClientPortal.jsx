@@ -160,6 +160,7 @@ export default function ClientPortal() {
     const cartDesc = cart.map((i) => `${i.qty}x ${i.name} (${formatCurrency(i.price)})`).join(", ");
     const extraDesc = extraRequest.trim() ? `\nOutros: ${extraRequest.trim()}` : "";
     const desc = cartDesc + extraDesc;
+
     await db.entities.Order.create({
       customer_id: customer.id,
       customer_name: customer.name,
@@ -171,10 +172,35 @@ export default function ClientPortal() {
       payment_method: cartPaymentMethod,
       payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
     });
+
+    if (cartPaymentMethod === "dinheiro") {
+      const { format: formatDate } = await import("date-fns");
+      const now = new Date();
+      await db.entities.Transaction.create({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: "compra",
+        amount: cartTotal,
+        date: formatDate(now, "dd/MM/yyyy"),
+        time: formatDate(now, "HH:mm"),
+        description: `Pedido online - ${cartDesc}`,
+      });
+
+      const currentCustomer = await db.entities.Customer.get(customer.id);
+      const newBalance = (currentCustomer.balance || 0) + cartTotal;
+      await db.entities.Customer.update(customer.id, { balance: newBalance });
+
+      if (storeProfile?.phone) {
+        const msg = `Pedido registrado! Valor: ${formatCurrency(cartTotal)}\nSaldo devedor: ${formatCurrency(newBalance)}`;
+        sendWhatsApp(storeProfile.phone, msg);
+      }
+    }
+
     setCart([]);
     setExtraRequest("");
     setCartPaymentMethod("");
     setCartCardType("");
+    setCartCardBrand("");
     setCheckoutSent(true);
     setSendingCart(false);
     setTimeout(() => setCheckoutSent(false), 5000);
