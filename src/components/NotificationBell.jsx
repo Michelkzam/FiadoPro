@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Bell, BellRing, X } from "lucide-react";
@@ -9,19 +9,25 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [showPanel, setShowPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const channelRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
 
-    const channel = supabase
-      .channel("notifications-realtime")
-      .on(
+    const setupChannel = async () => {
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+      }
+
+      const channel = supabase.channel("notifications-changes");
+
+      channel.on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev]);
           setUnreadCount((prev) => prev + 1);
-          if (permission === "granted") {
+          if (Notification.permission === "granted") {
             try {
               new Notification(payload.new.title, {
                 body: payload.new.body,
@@ -33,11 +39,19 @@ export default function NotificationBell() {
             }
           }
         }
-      )
-      .subscribe();
+      );
+
+      await channel.subscribe();
+      channelRef.current = channel;
+    };
+
+    setupChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 
