@@ -206,6 +206,44 @@ export default function ClientPortal() {
     setTimeout(() => setCheckoutSent(false), 5000);
   };
 
+  const processPayment = async (paymentMethod, description = "") => {
+    const amount = customer.balance || 0;
+    if (amount <= 0) {
+      toast.error("Não há saldo devedor para quitar");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { format: formatDate } = await import("date-fns");
+      const now = new Date();
+
+      await db.entities.Transaction.create({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: "pagamento",
+        amount,
+        date: formatDate(now, "dd/MM/yyyy"),
+        time: formatDate(now, "HH:mm"),
+        description: description || `Pagamento via ${paymentMethod}`,
+      });
+
+      const newBalance = 0;
+      await db.entities.Customer.update(customer.id, { balance: newBalance });
+
+      if (storeProfile?.phone) {
+        const msg = `${customer.name} confirmou pagamento de ${formatCurrency(amount)} via ${paymentMethod}. Saldo quitado!`;
+        sendWhatsApp(storeProfile.phone, msg);
+      }
+
+      setCustomer((prev) => ({ ...prev, balance: newBalance }));
+      toast.success(`Pagamento de ${formatCurrency(amount)} registrado!`);
+    } catch (error) {
+      toast.error("Erro ao registrar pagamento");
+    }
+    setLoading(false);
+  };
+
   const grouped = useMemo(() => products.reduce((acc, p) => {
     const cat = p.category || "Cardápio";
     if (!acc[cat]) acc[cat] = [];
@@ -363,25 +401,17 @@ export default function ClientPortal() {
                   <p className="text-xs font-medium text-foreground">Como deseja pagar?</p>
                   <button
                     className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      if (storeProfile?.phone) {
-                        const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} em dinheiro.`;
-                        sendWhatsApp(storeProfile.phone, msg);
-                      }
-                    }}
+                    onClick={() => processPayment("Dinheiro")}
+                    disabled={loading}
                   >
                     <span className="text-sm font-medium">💵 Pagar em Dinheiro</span>
-                    <span className="text-xs text-muted-foreground">Confirmar no WhatsApp</span>
+                    <span className="text-xs text-muted-foreground">{formatCurrency(customer.balance || 0)}</span>
                   </button>
                   {(customer.credit_limit || 0) > 0 && (
                     <button
                       className="w-full flex items-center justify-between p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
-                      onClick={() => {
-                        if (storeProfile?.phone) {
-                          const msg = `Olá! Sou ${customer.name} e gostaria de usar meu crédito de ${formatCurrency(customer.credit_limit)} para quitar minha conta de ${formatCurrency(customer.balance || 0)}.`;
-                          sendWhatsApp(storeProfile.phone, msg);
-                        }
-                      }}
+                      onClick={() => processPayment("Crédito na Conta")}
+                      disabled={loading}
                     >
                       <div className="text-left">
                         <span className="text-sm font-medium text-blue-700">💳 Usar Crédito na Conta</span>
@@ -440,13 +470,8 @@ export default function ClientPortal() {
                       {cardBrand && (
                         <button
                           className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
-                          onClick={() => {
-                            if (storeProfile?.phone) {
-                              const tipo = cardType === "credito" ? "crédito" : "débito";
-                              const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} no cartão de ${tipo} ${cardBrand}.`;
-                              sendWhatsApp(storeProfile.phone, msg);
-                            }
-                          }}
+                          onClick={() => processPayment(`Cartão ${cardType === "credito" ? "Crédito" : "Débito"} ${cardBrand}`)}
+                          disabled={loading}
                         >
                           Confirmar pagamento com {cardBrand} ({cardType === "credito" ? "Crédito" : "Débito"})
                         </button>
@@ -525,6 +550,15 @@ export default function ClientPortal() {
                     <p className="text-xs text-muted-foreground text-center py-2">Chaves Pix não cadastradas. Entre em contato com o estabelecimento.</p>
                   )}
                   <p className="text-xs text-muted-foreground text-center">Valor a pagar: <strong>{formatCurrency(customer.balance || 0)}</strong></p>
+                  {(storeProfile?.pix_key_1 || storeProfile?.pix_key_2) && (
+                    <button
+                      className="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
+                      onClick={() => processPayment("Pix")}
+                      disabled={loading}
+                    >
+                      {loading ? "Registrando..." : "Já paguei via Pix"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
