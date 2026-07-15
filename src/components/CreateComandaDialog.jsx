@@ -12,6 +12,7 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
   const queryClient = useQueryClient();
   const [tableNumber, setTableNumber] = useState(defaultTable);
   const [name, setName] = useState("");
+  const [comandaName, setComandaName] = useState("");
   const [cpf, setCpf] = useState("");
 
   const { data: customers = [] } = useCustomers();
@@ -34,12 +35,14 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
         }
       }
 
+      const label = data.comanda_name.trim() || `Mesa ${data.table_number} - ${data.name}`;
+
       return db.entities.Comanda.create({
         table_number: data.table_number,
         customer_id: customerId,
         customer_name: customerName,
         customer_cpf: data.cpf || null,
-        label: data.name,
+        label,
         status: "aberta",
         total: 0,
       });
@@ -63,9 +66,14 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
     createComanda.mutate({
       table_number: tableNumber.trim(),
       name: name.trim(),
+      comanda_name: comandaName.trim(),
       cpf: cpf.trim(),
     });
   };
+
+  const previewLabel = comandaName.trim() || (tableNumber.trim() && name.trim()
+    ? `Mesa ${tableNumber.trim()} - ${name.trim()}`
+    : "");
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -93,6 +101,20 @@ export default function CreateComandaDialog({ onClose, defaultTable = "" }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Nome da Comanda</Label>
+            <Input
+              placeholder="Ex: Confraternização, Aniversário..."
+              value={comandaName}
+              onChange={(e) => setComandaName(e.target.value)}
+            />
+            {previewLabel && (
+              <p className="text-xs text-muted-foreground">
+                Como aparecerá: <span className="font-medium text-foreground">{previewLabel}</span>
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
