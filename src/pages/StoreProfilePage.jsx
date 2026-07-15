@@ -16,40 +16,42 @@ export default function StoreProfilePage() {
   const queryClient = useQueryClient();
   const fileRef = useRef();
   const [form, setForm] = useState(null);
+  const initialized = useRef(false);
 
   const { data: profiles = [], isLoading } = useStoreProfile();
   const profile = profiles[0];
 
   useEffect(() => {
-    if (!form) {
+    if (profile && !initialized.current) {
       setForm({
-        store_name: profile?.store_name || "",
-        logo_url: profile?.logo_url || "",
-        business_type: profile?.business_type || "pj",
-        cnpj: profile?.cnpj || "",
-        cpf: profile?.cpf || "",
-        owner_name: profile?.owner_name || "",
-        email: profile?.email || "",
-        phone: profile?.phone || "",
-        address: profile?.address || "",
-        neighborhood: profile?.neighborhood || "",
-        city: profile?.city || "",
-        state: profile?.state || "",
-        cep: profile?.cep || "",
-        instagram: profile?.instagram || "",
-        bank_name: profile?.bank_name || "",
-        bank_agency: profile?.bank_agency || "",
-        bank_account: profile?.bank_account || "",
-        bank_account_type: profile?.bank_account_type || "",
-        bank_holder: profile?.bank_holder || "",
-        pix_key_1: profile?.pix_key_1 || "",
-        pix_key_2: profile?.pix_key_2 || "",
-        message_template: profile?.message_template || "Olá {nome}, você possui um saldo devedor de {valor} em nossa loja. Entre em contato para regularizar.",
-        auto_message_enabled: profile?.auto_message_enabled || false,
-        auto_message_interval_days: profile?.auto_message_interval_days || 15,
+        store_name: profile.store_name || "",
+        logo_url: profile.logo_url || "",
+        business_type: profile.business_type || "pj",
+        cnpj: profile.cnpj || "",
+        cpf: profile.cpf || "",
+        owner_name: profile.owner_name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        address: profile.address || "",
+        neighborhood: profile.neighborhood || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        cep: profile.cep || "",
+        instagram: profile.instagram || "",
+        bank_name: profile.bank_name || "",
+        bank_agency: profile.bank_agency || "",
+        bank_account: profile.bank_account || "",
+        bank_account_type: profile.bank_account_type || "",
+        bank_holder: profile.bank_holder || "",
+        pix_key_1: profile.pix_key_1 || "",
+        pix_key_2: profile.pix_key_2 || "",
+        message_template: profile.message_template || "Olá {nome}, você possui um saldo devedor de {valor} em nossa loja. Entre em contato para regularizar.",
+        auto_message_enabled: profile.auto_message_enabled || false,
+        auto_message_interval_days: profile.auto_message_interval_days || 15,
       });
+      initialized.current = true;
     }
-  }, [profile, form]);
+  }, [profile]);
 
   const save = useMutation({
     mutationFn: (data) =>
@@ -65,9 +67,18 @@ export default function StoreProfilePage() {
   const handleLogo = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { file_url } = await db.integrations.Core.UploadFile({ file });
-    setForm((f) => ({ ...f, logo_url: file_url }));
+    try {
+      setUploading(true);
+      const { file_url } = await db.integrations.Core.UploadFile({ file });
+      setForm((f) => ({ ...f, logo_url: file_url }));
+      toast.success("Logo enviada!");
+    } catch (error) {
+      toast.error("Erro ao enviar imagem: " + (error.message || "Tente novamente"));
+    }
+    setUploading(false);
   };
+
+  const [uploading, setUploading] = useState(false);
 
   if (isLoading || !form) {
     return <LoadingSpinner />;
@@ -87,6 +98,8 @@ export default function StoreProfilePage() {
             >
               {form.logo_url ? (
                 <img src={form.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              ) : uploading ? (
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               ) : (
                 <Upload className="w-6 h-6 text-muted-foreground" />
               )}
