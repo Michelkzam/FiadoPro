@@ -95,8 +95,25 @@ export default function CustomerDetail() {
               <p className="text-xs text-muted-foreground">Limite: {formatCurrency(customer.credit_limit || 0)}</p>
             )}
             {customer.credit_limit > 0 && (customer.balance || 0) > (customer.credit_limit || 0) && (
-              <div className="mt-1 p-2 bg-red-50 border border-red-300 rounded-lg text-left">
+              <div className="mt-1 p-2 bg-red-50 border border-red-300 rounded-lg text-left space-y-2">
                 <p className="text-xs font-bold text-red-700">⚠️ Limite de crédito excedido!</p>
+                <p className="text-xs text-red-600">
+                  Saldo: {formatCurrency(customer.balance)} | Limite: {formatCurrency(customer.credit_limit)}
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs"
+                  onClick={async () => {
+                    const novoLimite = prompt("Novo limite de crédito (R$):", customer.credit_limit);
+                    if (novoLimite && parseFloat(novoLimite) > 0) {
+                      await db.entities.Customer.update(customer.id, { credit_limit: parseFloat(novoLimite) });
+                      toast.success("Limite atualizado! Cliente pode fazer novas compras.");
+                      window.location.reload();
+                    }
+                  }}
+                >
+                  🔓 Liberar Crédito
+                </Button>
               </div>
             )}
             {(customer.balance || 0) < 0 && (
