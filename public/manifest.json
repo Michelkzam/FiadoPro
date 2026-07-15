@@ -1,0 +1,21 @@
+const db = globalThis.__B44_DB__ || { auth:{ isAuthenticated: async()=>false, me: async()=>null }, entities:new Proxy({}, { get:()=>({ filter:async()=>[], get:async()=>null, create:async()=>({}), update:async()=>({}), delete:async()=>({}) }) }), integrations:{ Core:{ UploadFile:async()=>({ file_url:'' }) } } };
+
+{
+  "name": "Fiado - Compre Agora, Pague Depois",
+  "short_name": "Fiado",
+  "description": "Sistema de gestão de fiado para pequenos comércios",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eff6ff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "https://db.com/logo_v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
