@@ -31,7 +31,9 @@ export default function ClientPortal() {
   const [storeProfile, setStoreProfile] = useState(null);
   const [showCardPayment, setShowCardPayment] = useState(false);
   const [showPixPayment, setShowPixPayment] = useState(false);
+  const [pixAmount, setPixAmount] = useState("");
   const [showCashPayment, setShowCashPayment] = useState(false);
+  const [cashAmount, setCashAmount] = useState("");
   const [cardBrand, setCardBrand] = useState("");
   const [cardType, setCardType] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
@@ -206,10 +208,16 @@ export default function ClientPortal() {
     setTimeout(() => setCheckoutSent(false), 5000);
   };
 
-  const processPayment = async (paymentMethod, description = "") => {
-    const amount = customer.balance || 0;
-    if (amount <= 0) {
+  const processPayment = async (paymentMethod, customAmount = null) => {
+    const totalDebito = customer.balance || 0;
+    if (totalDebito <= 0) {
       toast.error("Não há saldo devedor para quitar");
+      return;
+    }
+
+    const amount = customAmount || totalDebito;
+    if (amount <= 0 || amount > totalDebito) {
+      toast.error(`Valor deve ser entre R$ 0,01 e ${formatCurrency(totalDebito)}`);
       return;
     }
 
@@ -218,6 +226,11 @@ export default function ClientPortal() {
       const { format: formatDate } = await import("date-fns");
       const now = new Date();
 
+      const isParcelado = amount < totalDebito;
+      const desc = isParcelado
+        ? `Pagamento parcial (${formatCurrency(amount)}) via ${paymentMethod} — Restante: ${formatCurrency(totalDebito - amount)}`
+        : `Pagamento integral via ${paymentMethod}`;
+
       await db.entities.Transaction.create({
         customer_id: customer.id,
         customer_name: customer.name,
@@ -225,19 +238,35 @@ export default function ClientPortal() {
         amount,
         date: formatDate(now, "dd/MM/yyyy"),
         time: formatDate(now, "HH:mm"),
-        description: description || `Pagamento via ${paymentMethod}`,
+        description: desc,
       });
 
-      const newBalance = 0;
+      const newBalance = totalDebito - amount;
       await db.entities.Customer.update(customer.id, { balance: newBalance });
 
       if (storeProfile?.phone) {
-        const msg = `${customer.name} confirmou pagamento de ${formatCurrency(amount)} via ${paymentMethod}. Saldo quitado!`;
+        const status = newBalance <= 0 ? "Saldo quitado!" : `Restante: ${formatCurrency(newBalance)}`;
+        const msg = `${customer.name} pagou ${formatCurrency(amount)} via ${paymentMethod}.\n${status}`;
         sendWhatsApp(storeProfile.phone, msg);
       }
 
       setCustomer((prev) => ({ ...prev, balance: newBalance }));
-      toast.success(`Pagamento de ${formatCurrency(amount)} registrado!`);
+      setTransactions((prev) => [{
+        id: Date.now().toString(),
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: "pagamento",
+        amount,
+        date: formatDate(now, "dd/MM/yyyy"),
+        time: formatDate(now, "HH:mm"),
+        description: desc,
+      }, ...prev]);
+
+      if (newBalance <= 0) {
+        toast.success(`Conta quitada! Pagamento de ${formatCurrency(amount)}`);
+      } else {
+        toast.success(`Pagamento de ${formatCurrency(amount)} registrado! Restante: ${formatCurrency(newBalance)}`);
+      }
     } catch (error) {
       toast.error("Erro ao registrar pagamento");
     }
@@ -399,14 +428,51 @@ export default function ClientPortal() {
               {showCashPayment && (
                 <div className="space-y-3 pt-2 border-t border-border">
                   <p className="text-xs font-medium text-foreground">Como deseja pagar?</p>
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Saldo devedor</p>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(customer.balance || 0)}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Valor do pagamento</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={customer.balance || 0}
+                      placeholder={formatCurrency(customer.balance || 0)}
+                      value={cashAmount}
+                      onChange={(e) => setCashAmount(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCashAmount(String(customer.balance || 0))}
+                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors"
+                      >
+                        Valor total
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCashAmount(String(Math.round((customer.balance || 0) / 2 * 100) / 100))}
+                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors"
+                      >
+                        Metade
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                    onClick={() => processPayment("Dinheiro")}
-                    disabled={loading}
+                    onClick={() => processPayment("Dinheiro", parseFloat(cashAmount) || null)}
+                    disabled={loading || !cashAmount || parseFloat(cashAmount) <= 0}
                   >
-                    <span className="text-sm font-medium">💵 Pagar em Dinheiro</span>
-                    <span className="text-xs text-muted-foreground">{formatCurrency(customer.balance || 0)}</span>
+                    <span className="text-sm font-medium">💵 Confirmar Pagamento</span>
+                    <span className="text-xs text-muted-foreground">
+                      {cashAmount ? formatCurrency(parseFloat(cashAmount)) : "Informe o valor"}
+                    </span>
                   </button>
+
                   {(customer.credit_limit || 0) > 0 && (
                     <button
                       className="w-full flex items-center justify-between p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
@@ -484,6 +550,35 @@ export default function ClientPortal() {
               {showPixPayment && (
                 <div className="space-y-3 pt-2 border-t border-border">
                   <p className="text-xs font-medium text-foreground">Chaves Pix do estabelecimento:</p>
+
+                  <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Saldo devedor</p>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(customer.balance || 0)}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Valor do pagamento</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={customer.balance || 0}
+                      placeholder={formatCurrency(customer.balance || 0)}
+                      value={pixAmount}
+                      onChange={(e) => setPixAmount(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setPixAmount(String(customer.balance || 0))}
+                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors">
+                        Valor total
+                      </button>
+                      <button type="button" onClick={() => setPixAmount(String(Math.round((customer.balance || 0) / 2 * 100) / 100))}
+                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors">
+                        Metade
+                      </button>
+                    </div>
+                  </div>
+
                   {storeProfile?.pix_key_1 ? (
                     <div className="space-y-2">
                       <button
@@ -502,7 +597,7 @@ export default function ClientPortal() {
                         <QRCodeSVG
                           value={generatePixPayload({
                             key: storeProfile.pix_key_1,
-                            amount: (customer.balance || 0).toFixed(2),
+                            amount: (parseFloat(pixAmount) || customer.balance || 0).toFixed(2),
                             merchantName: storeProfile.store_name || "Loja",
                             merchantCity: storeProfile.city || "SAO PAULO",
                           })}
@@ -511,7 +606,7 @@ export default function ClientPortal() {
                           includeMargin={true}
                         />
                         <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
-                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(customer.balance || 0)}</p>
+                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(parseFloat(pixAmount) || customer.balance || 0)}</p>
                       </div>
                     </div>
                   ) : null}
@@ -533,7 +628,7 @@ export default function ClientPortal() {
                         <QRCodeSVG
                           value={generatePixPayload({
                             key: storeProfile.pix_key_2,
-                            amount: (customer.balance || 0).toFixed(2),
+                            amount: (parseFloat(pixAmount) || customer.balance || 0).toFixed(2),
                             merchantName: storeProfile.store_name || "Loja",
                             merchantCity: storeProfile.city || "SAO PAULO",
                           })}
@@ -542,19 +637,18 @@ export default function ClientPortal() {
                           includeMargin={true}
                         />
                         <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
-                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(customer.balance || 0)}</p>
+                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(parseFloat(pixAmount) || customer.balance || 0)}</p>
                       </div>
                     </div>
                   ) : null}
                   {!storeProfile?.pix_key_1 && !storeProfile?.pix_key_2 && (
                     <p className="text-xs text-muted-foreground text-center py-2">Chaves Pix não cadastradas. Entre em contato com o estabelecimento.</p>
                   )}
-                  <p className="text-xs text-muted-foreground text-center">Valor a pagar: <strong>{formatCurrency(customer.balance || 0)}</strong></p>
                   {(storeProfile?.pix_key_1 || storeProfile?.pix_key_2) && (
                     <button
                       className="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
-                      onClick={() => processPayment("Pix")}
-                      disabled={loading}
+                      onClick={() => processPayment("Pix", parseFloat(pixAmount) || null)}
+                      disabled={loading || !pixAmount || parseFloat(pixAmount) <= 0}
                     >
                       {loading ? "Registrando..." : "Já paguei via Pix"}
                     </button>
