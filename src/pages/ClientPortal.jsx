@@ -10,6 +10,7 @@ import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { generatePixPayload } from "@/utils/pixUtils";
+import CreditLimitExceededPopup from "../components/CreditLimitExceededPopup";
 
 const PORTAL_SESSION_KEY = "fiadopro_portal_session";
 
@@ -29,16 +30,9 @@ export default function ClientPortal() {
   const [checkoutSent, setCheckoutSent] = useState(false);
   const [sendingCart, setSendingCart] = useState(false);
   const [storeProfile, setStoreProfile] = useState(null);
-  const [showCardPayment, setShowCardPayment] = useState(false);
-  const [showPixPayment, setShowPixPayment] = useState(false);
-  const [pixAmount, setPixAmount] = useState("");
-  const [showCashPayment, setShowCashPayment] = useState(false);
-  const [cashAmount, setCashAmount] = useState("");
-  const [cardBrand, setCardBrand] = useState("");
-  const [cardType, setCardType] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
-  const [cartCardType, setCartCardType] = useState("");
-  const [cartCardBrand, setCartCardBrand] = useState("");
+  const [useCredit, setUseCredit] = useState(false);
+  const [showCreditLimitPopup, setShowCreditLimitPopup] = useState(false);
 
   const normalize = (str) => str.replace(/\D/g, "");
 
@@ -153,22 +147,16 @@ export default function ClientPortal() {
       setError("Selecione a forma de pagamento");
       return;
     }
-    if (cartPaymentMethod === "cartao" && !cartCardType) {
-      setError("Selecione débito ou crédito");
-      return;
-    }
 
-    if (cartPaymentMethod === "dinheiro" && (customer.credit_limit || 0) > 0) {
+    let orderStatus = "pendente";
+    let exceedsLimit = false;
+
+    if (cartPaymentMethod === "dinheiro" && useCredit && (customer.credit_limit || 0) > 0) {
       const currentBalance = customer.balance || 0;
       const newBalance = currentBalance + cartTotal;
       if (newBalance > customer.credit_limit) {
-        setError(`Limite de crédito excedido! Seu limite é ${formatCurrency(customer.credit_limit)} e o novo saldo seria ${formatCurrency(newBalance)}. Aguarde liberação do lojista.`);
-        if (storeProfile?.phone) {
-          const msg = `⚠️ ${customer.name} tentou fazer compra de ${formatCurrency(cartTotal)} que excede o limite de crédito.\nLimite: ${formatCurrency(customer.credit_limit)}\nSaldo atual: ${formatCurrency(currentBalance)}\nNovo saldo seria: ${formatCurrency(newBalance)}\n\nLibere a compra no painel.`;
-          sendWhatsApp(storeProfile.phone, msg);
-        }
-        setSendingCart(false);
-        return;
+        exceedsLimit = true;
+        orderStatus = "pendente_aprovacao_limite";
       }
     }
 
@@ -184,13 +172,12 @@ export default function ClientPortal() {
       customer_phone: customer.phone,
       description: desc || "Pedido",
       amount: cartTotal,
-      status: "pendente",
+      status: orderStatus,
       service_type: "online_entrega",
       payment_method: cartPaymentMethod,
-      payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
     });
 
-    if (cartPaymentMethod === "dinheiro") {
+    if (cartPaymentMethod === "dinheiro" && !exceedsLimit) {
       const { format: formatDate } = await import("date-fns");
       const now = new Date();
       await db.entities.Transaction.create({
@@ -215,79 +202,23 @@ export default function ClientPortal() {
       }
     }
 
+    if (exceedsLimit) {
+      setShowCreditLimitPopup(true);
+      if (storeProfile?.phone) {
+        const currentBalance = customer.balance || 0;
+        const newBalance = currentBalance + cartTotal;
+        const msg = `⚠️ Pedido com limite excedido!\n\nCliente: ${customer.name}\nCompra: ${formatCurrency(cartTotal)}\nLimite: ${formatCurrency(customer.credit_limit)}\nSaldo atual: ${formatCurrency(currentBalance)}\nNovo saldo seria: ${formatCurrency(newBalance)}\n\nResponda: ACEITO ou RECUSADO`;
+        sendWhatsApp(storeProfile.phone, msg);
+      }
+    }
+
     setCart([]);
     setExtraRequest("");
     setCartPaymentMethod("");
-    setCartCardType("");
-    setCartCardBrand("");
+    setUseCredit(false);
     setCheckoutSent(true);
     setSendingCart(false);
     setTimeout(() => setCheckoutSent(false), 5000);
-  };
-
-  const processPayment = async (paymentMethod, customAmount = null) => {
-    const totalDebito = customer.balance || 0;
-    if (totalDebito <= 0) {
-      toast.error("Não há saldo devedor para quitar");
-      return;
-    }
-
-    const amount = customAmount || totalDebito;
-    if (amount <= 0 || amount > totalDebito) {
-      toast.error(`Valor deve ser entre R$ 0,01 e ${formatCurrency(totalDebito)}`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { format: formatDate } = await import("date-fns");
-      const now = new Date();
-
-      const isParcelado = amount < totalDebito;
-      const desc = isParcelado
-        ? `Pagamento parcial (${formatCurrency(amount)}) via ${paymentMethod} — Restante: ${formatCurrency(totalDebito - amount)}`
-        : `Pagamento integral via ${paymentMethod}`;
-
-      await db.entities.Transaction.create({
-        customer_id: customer.id,
-        customer_name: customer.name,
-        type: "pagamento",
-        amount,
-        date: formatDate(now, "dd/MM/yyyy"),
-        time: formatDate(now, "HH:mm"),
-        description: desc,
-      });
-
-      const newBalance = totalDebito - amount;
-      await db.entities.Customer.update(customer.id, { balance: newBalance });
-
-      if (storeProfile?.phone) {
-        const status = newBalance <= 0 ? "Saldo quitado!" : `Restante: ${formatCurrency(newBalance)}`;
-        const msg = `${customer.name} pagou ${formatCurrency(amount)} via ${paymentMethod}.\n${status}`;
-        sendWhatsApp(storeProfile.phone, msg);
-      }
-
-      setCustomer((prev) => ({ ...prev, balance: newBalance }));
-      setTransactions((prev) => [{
-        id: Date.now().toString(),
-        customer_id: customer.id,
-        customer_name: customer.name,
-        type: "pagamento",
-        amount,
-        date: formatDate(now, "dd/MM/yyyy"),
-        time: formatDate(now, "HH:mm"),
-        description: desc,
-      }, ...prev]);
-
-      if (newBalance <= 0) {
-        toast.success(`Conta quitada! Pagamento de ${formatCurrency(amount)}`);
-      } else {
-        toast.success(`Pagamento de ${formatCurrency(amount)} registrado! Restante: ${formatCurrency(newBalance)}`);
-      }
-    } catch (error) {
-      toast.error("Erro ao registrar pagamento");
-    }
-    setLoading(false);
   };
 
   const grouped = useMemo(() => products.reduce((acc, p) => {
@@ -417,7 +348,7 @@ export default function ClientPortal() {
             {pendingOrders.length > 0 && (
               <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-border bg-amber-50">
-                  <p className="font-semibold text-amber-800 text-sm">Pedidos Pendentes</p>
+                  <p className="font-semibold text-amber-800 text-sm">Pedidos em Aberto</p>
                 </div>
                 <div className="divide-y divide-border">
                   {pendingOrders.map((o) => (
@@ -430,263 +361,11 @@ export default function ClientPortal() {
               </div>
             )}
 
-            <div className="bg-card rounded-xl border border-border shadow-sm p-4 space-y-3">
-              <p className="font-semibold text-foreground text-sm">Pagar Minha Conta</p>
-              <p className="text-xs text-muted-foreground">Saldo: <strong className="text-foreground">{formatCurrency(customer.balance || 0)}</strong></p>
-
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showCashPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
-                  onClick={() => { setShowCashPayment(!showCashPayment); setShowCardPayment(false); setShowPixPayment(false); setCardType(""); setCardBrand(""); }}
-                >
-                  💵 Dinheiro
-                </button>
-                <button
-                  className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showCardPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
-                  onClick={() => { setShowCardPayment(!showCardPayment); setShowCashPayment(false); setShowPixPayment(false); setCardType(""); setCardBrand(""); }}
-                >
-                  <CreditCard className="w-4 h-4 text-blue-500" /> Cartão
-                </button>
-                <button
-                  className={`flex items-center justify-center gap-2 border rounded-xl p-3 text-sm font-medium transition-colors ${showPixPayment ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}
-                  onClick={() => { setShowPixPayment(!showPixPayment); setShowCashPayment(false); setShowCardPayment(false); setCardType(""); setCardBrand(""); }}
-                >
-                  <svg className="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 6v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V6l-8-4z"/></svg>
-                  Pix
-                </button>
+            {pendingOrders.length === 0 && (customer.balance || 0) <= 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">✅ Sua conta está em dia!</p>
               </div>
-
-              {showCashPayment && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs font-medium text-foreground">Como deseja pagar?</p>
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Saldo devedor</p>
-                    <p className="text-lg font-bold text-foreground">{formatCurrency(customer.balance || 0)}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Valor do pagamento</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max={customer.balance || 0}
-                      placeholder={formatCurrency(customer.balance || 0)}
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setCashAmount(String(customer.balance || 0))}
-                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        Valor total
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCashAmount(String(Math.round((customer.balance || 0) / 2 * 100) / 100))}
-                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors"
-                      >
-                        Metade
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                    onClick={() => processPayment("Dinheiro", parseFloat(cashAmount) || null)}
-                    disabled={loading || !cashAmount || parseFloat(cashAmount) <= 0}
-                  >
-                    <span className="text-sm font-medium">💵 Confirmar Pagamento</span>
-                    <span className="text-xs text-muted-foreground">
-                      {cashAmount ? formatCurrency(parseFloat(cashAmount)) : "Informe o valor"}
-                    </span>
-                  </button>
-
-                  {(customer.credit_limit || 0) > 0 && (
-                    <button
-                      className="w-full flex items-center justify-between p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
-                      onClick={() => processPayment("Crédito na Conta")}
-                      disabled={loading}
-                    >
-                      <div className="text-left">
-                        <span className="text-sm font-medium text-blue-700">💳 Usar Crédito na Conta</span>
-                        <p className="text-xs text-blue-600">Limite disponível: {formatCurrency(customer.credit_limit)}</p>
-                      </div>
-                      <span className="text-xs text-blue-500">Quitar conta</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {showCardPayment && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  {!cardType ? (
-                    <>
-                      <p className="text-xs font-medium text-foreground">Tipo de cartão:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCardType("credito")}
-                          className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <CreditCard className="w-4 h-4 text-blue-500" />
-                          <span className="text-sm font-medium">Crédito</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCardType("debito")}
-                          className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <CreditCard className="w-4 h-4 text-green-500" />
-                          <span className="text-sm font-medium">Débito</span>
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-foreground">
-                          Cartão de {cardType === "credito" ? "Crédito" : "Débito"} — Bandeira:
-                        </p>
-                        <button onClick={() => setCardType("")} className="text-xs text-primary hover:underline">Trocar</button>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
-                          <button
-                            key={brand}
-                            type="button"
-                            onClick={() => setCardBrand(brand)}
-                            className={`py-2 px-3 rounded-lg text-xs font-medium border transition-colors ${cardBrand === brand ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
-                          >
-                            {brand}
-                          </button>
-                        ))}
-                      </div>
-                      {cardBrand && (
-                        <button
-                          className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
-                          onClick={() => processPayment(`Cartão ${cardType === "credito" ? "Crédito" : "Débito"} ${cardBrand}`)}
-                          disabled={loading}
-                        >
-                          Confirmar pagamento com {cardBrand} ({cardType === "credito" ? "Crédito" : "Débito"})
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {showPixPayment && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs font-medium text-foreground">Chaves Pix do estabelecimento:</p>
-
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Saldo devedor</p>
-                    <p className="text-lg font-bold text-foreground">{formatCurrency(customer.balance || 0)}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Valor do pagamento</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max={customer.balance || 0}
-                      placeholder={formatCurrency(customer.balance || 0)}
-                      value={pixAmount}
-                      onChange={(e) => setPixAmount(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setPixAmount(String(customer.balance || 0))}
-                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors">
-                        Valor total
-                      </button>
-                      <button type="button" onClick={() => setPixAmount(String(Math.round((customer.balance || 0) / 2 * 100) / 100))}
-                        className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors">
-                        Metade
-                      </button>
-                    </div>
-                  </div>
-
-                  {storeProfile?.pix_key_1 ? (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
-                        className="w-full bg-green-50 border border-green-200 rounded-xl p-3 text-left hover:bg-green-100 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-green-700 font-semibold">Chave Pix Principal</p>
-                            <p className="text-sm font-mono font-bold text-green-800 break-all">{storeProfile.pix_key_1}</p>
-                          </div>
-                          <span className="text-xs text-green-600 shrink-0">📋 Copiar</span>
-                        </div>
-                      </button>
-                      <div className="bg-white border border-green-200 rounded-xl p-4 flex flex-col items-center">
-                        <QRCodeSVG
-                          value={generatePixPayload({
-                            key: storeProfile.pix_key_1,
-                            amount: (parseFloat(pixAmount) || customer.balance || 0).toFixed(2),
-                            merchantName: storeProfile.store_name || "Loja",
-                            merchantCity: storeProfile.city || "SAO PAULO",
-                          })}
-                          size={180}
-                          level="M"
-                          includeMargin={true}
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
-                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(parseFloat(pixAmount) || customer.balance || 0)}</p>
-                      </div>
-                    </div>
-                  ) : null}
-                  {storeProfile?.pix_key_2 ? (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_2); toast.success("Chave Pix copiada!"); }}
-                        className="w-full bg-blue-50 border border-blue-200 rounded-xl p-3 text-left hover:bg-blue-100 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-blue-700 font-semibold">Chave Pix Secundária</p>
-                            <p className="text-sm font-mono font-bold text-blue-800 break-all">{storeProfile.pix_key_2}</p>
-                          </div>
-                          <span className="text-xs text-blue-600 shrink-0">📋 Copiar</span>
-                        </div>
-                      </button>
-                      <div className="bg-white border border-blue-200 rounded-xl p-4 flex flex-col items-center">
-                        <QRCodeSVG
-                          value={generatePixPayload({
-                            key: storeProfile.pix_key_2,
-                            amount: (parseFloat(pixAmount) || customer.balance || 0).toFixed(2),
-                            merchantName: storeProfile.store_name || "Loja",
-                            merchantCity: storeProfile.city || "SAO PAULO",
-                          })}
-                          size={180}
-                          level="M"
-                          includeMargin={true}
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">Escaneie para pagar</p>
-                        <p className="text-sm font-bold text-foreground mt-1">{formatCurrency(parseFloat(pixAmount) || customer.balance || 0)}</p>
-                      </div>
-                    </div>
-                  ) : null}
-                  {!storeProfile?.pix_key_1 && !storeProfile?.pix_key_2 && (
-                    <p className="text-xs text-muted-foreground text-center py-2">Chaves Pix não cadastradas. Entre em contato com o estabelecimento.</p>
-                  )}
-                  {(storeProfile?.pix_key_1 || storeProfile?.pix_key_2) && (
-                    <button
-                      className="w-full bg-green-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
-                      onClick={() => processPayment("Pix", parseFloat(pixAmount) || null)}
-                      disabled={loading || !pixAmount || parseFloat(pixAmount) <= 0}
-                    >
-                      {loading ? "Registrando..." : "Já paguei via Pix"}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         )}
 
@@ -865,12 +544,11 @@ export default function ClientPortal() {
                       {[
                         { value: "dinheiro", label: "Dinheiro", icon: Banknote },
                         { value: "pix", label: "Pix", icon: Smartphone },
-                        { value: "cartao", label: "Cartão", icon: CreditCard },
                       ].map(({ value, label, icon: Icon }) => (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => { setCartPaymentMethod(value); setCartCardType(""); setCartCardBrand(""); setError(""); }}
+                          onClick={() => { setCartPaymentMethod(value); setUseCredit(false); setError(""); }}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
                             cartPaymentMethod === value
                               ? "border-primary bg-primary/5 text-primary"
@@ -883,38 +561,30 @@ export default function ClientPortal() {
                     </div>
 
                     {cartPaymentMethod === "dinheiro" && (customer.credit_limit || 0) > 0 && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
-                        <p className="text-xs text-blue-700">💡 Você tem crédito de <strong>{formatCurrency(customer.credit_limit)}</strong> disponível</p>
-                      </div>
-                    )}
-
-                    {cartPaymentMethod === "cartao" && (
-                      <>
-                        {!cartCardType ? (
-                          <div className="flex gap-2">
-                            <button type="button" onClick={() => setCartCardType("credito")} className="flex-1 py-1.5 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
-                              Crédito
-                            </button>
-                            <button type="button" onClick={() => setCartCardType("debito")} className="flex-1 py-1.5 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
-                              Débito
-                            </button>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-blue-800">Usar Crédito da Conta</p>
+                            <p className="text-[11px] text-blue-600">Limite: {formatCurrency(customer.credit_limit)}</p>
                           </div>
-                        ) : (
-                          <>
-                            <div className="grid grid-cols-3 gap-1.5">
-                              {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
-                                <button key={brand} type="button" onClick={() => setCartCardBrand(brand)}
-                                  className={`py-1.5 px-2 rounded-lg text-[10px] font-medium border transition-colors ${
-                                    cartCardBrand === brand ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"
-                                  }`}
-                                >
-                                  {brand}
-                                </button>
-                              ))}
-                            </div>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => setUseCredit(!useCredit)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              useCredit
+                                ? "bg-blue-600 text-white"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            }`}
+                          >
+                            {useCredit ? "✓ Ativado" : "Usar Crédito"}
+                          </button>
+                        </div>
+                        {useCredit && (
+                          <p className="text-[11px] text-blue-600 mt-1">
+                            A compra será registrada como fiado no saldo da conta
+                          </p>
                         )}
-                      </>
+                      </div>
                     )}
 
                     {cartPaymentMethod === "pix" && storeProfile?.pix_key_1 && (
@@ -937,6 +607,9 @@ export default function ClientPortal() {
                           📋 Copiar chave Pix
                         </button>
                       </div>
+                    )}
+                    {!storeProfile?.pix_key_1 && cartPaymentMethod === "pix" && (
+                      <p className="text-xs text-muted-foreground text-center py-2">Chave Pix não configurada. Entre em contato com a loja.</p>
                     )}
 
                     {error && <p className="text-xs text-destructive">{error}</p>}
@@ -962,6 +635,20 @@ export default function ClientPortal() {
             )}
           </div>
         )}
+
+        <CreditLimitExceededPopup
+          open={showCreditLimitPopup}
+          onClose={() => setShowCreditLimitPopup(false)}
+          customer={customer}
+          cartTotal={cartTotal}
+          onContactStore={() => {
+            setShowCreditLimitPopup(false);
+            if (storeProfile?.phone) {
+              const msg = `Olá! Sou ${customer.name} e gostaria de solicitar a liberação do meu limite de crédito para realizar uma compra.`;
+              sendWhatsApp(storeProfile.phone, msg);
+            }
+          }}
+        />
       </div>
     </div>
   );

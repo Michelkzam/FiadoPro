@@ -26,6 +26,7 @@ export const SERVICE_TYPE_CONFIG = {
 
 export const ORDER_STATUS = {
   PENDENTE: "pendente",
+  PENDENTE_APROVACAO_LIMITE: "pendente_aprovacao_limite",
   APROVADO: "aprovado",
   RECUSADO: "recusado",
   SAIU_PARA_ENTREGA: "saiu_para_entrega",
@@ -34,6 +35,7 @@ export const ORDER_STATUS = {
 
 export const ORDER_STATUS_CONFIG = {
   [ORDER_STATUS.PENDENTE]: { label: "Pendente", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+  [ORDER_STATUS.PENDENTE_APROVACAO_LIMITE]: { label: "Aguardando Aprovação (Limite)", color: "text-orange-600 bg-orange-50 border-orange-200" },
   [ORDER_STATUS.APROVADO]: { label: "Aprovado", color: "text-green-600 bg-green-50 border-green-200" },
   [ORDER_STATUS.RECUSADO]: { label: "Recusado", color: "text-red-600 bg-red-50 border-red-200" },
   [ORDER_STATUS.SAIU_PARA_ENTREGA]: { label: "Saiu p/ Entrega", color: "text-purple-600 bg-purple-50 border-purple-200" },

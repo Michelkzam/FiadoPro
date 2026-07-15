@@ -38,6 +38,7 @@ export function useOrders() {
   return useQuery({
     queryKey: ["orders"],
     queryFn: () => db.entities.Order.list("-created_at", 500),
+    refetchInterval: 15000,
   });
 }
 

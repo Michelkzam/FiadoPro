@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState, useEffect, useMemo } from "react";
 import ApproveOrderDialog from "@/components/ApproveOrderDialog";
 import NewOrderDialog from "@/components/NewOrderDialog";
+import CreditLimitApprovalPopup from "@/components/CreditLimitApprovalPopup";
 import LoadingSpinner from "../components/LoadingSpinner";
 import db from "@/lib/db";
 import { useOrders } from "@/hooks/useQueries";
@@ -23,6 +24,7 @@ const PAYMENT_CONFIG = {
 };
 
 const CARD_TYPE_LABELS = { credito: "Crédito", debito: "Débito" };
+const CARD_BRAND_LABELS = { visa: "Visa", mastercard: "Mastercard", elo: "Elo", hipercard: "Hipercard", amex: "Amex", outro: "Outro" };
 
 const STATUS_FLOW = {
   [ORDER_STATUS.PENDENTE]: { next: null, action: "Aprovar" },
@@ -38,6 +40,7 @@ export default function Orders() {
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [dateFilter, setDateFilter] = useState(todayStr());
   const [cardReminder, setCardReminder] = useState(null);
+  const [creditLimitOrder, setCreditLimitOrder] = useState(null);
   const { approveOrder, updateOrderStatus } = useOrderActions();
 
   const { data: orders = [], isLoading } = useOrders();
@@ -47,6 +50,9 @@ export default function Orders() {
       if (event.type === "create") {
         toast.info(`Novo pedido de ${event.data?.customer_name || "cliente"}!`);
         if (event.data) notifyNewOrder(event.data);
+        if (event.data?.status === "pendente_aprovacao_limite") {
+          setCreditLimitOrder(event.data);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     });
@@ -262,6 +268,7 @@ export default function Orders() {
                         <payCfg.icon className={`w-3 h-3 ${payCfg.color}`} />
                         {payCfg.label}
                         {order.payment_card_type && ` ${CARD_TYPE_LABELS[order.payment_card_type]}`}
+                        {order.payment_card_brand && ` - ${CARD_BRAND_LABELS[order.payment_card_brand] || order.payment_card_brand}`}
                       </span>
                     )}
                   </div>
@@ -278,6 +285,11 @@ export default function Orders() {
                         <XCircle className="w-3 h-3" /> Recusar
                       </Button>
                     </>
+                  )}
+                  {order.status === ORDER_STATUS.PENDENTE_APROVACAO_LIMITE && (
+                    <Button size="sm" className="gap-1 bg-orange-500 hover:bg-orange-600 text-xs flex-1" onClick={() => setCreditLimitOrder(order)}>
+                      <AlertTriangle className="w-3 h-3" /> Revisar Limite
+                    </Button>
                   )}
                   {flow?.next && order.status !== ORDER_STATUS.PENDENTE && (
                     <Button
@@ -332,7 +344,7 @@ export default function Orders() {
               <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground">
                 <p><strong>Cliente:</strong> {cardReminder.customer_name}</p>
                 <p><strong>Valor:</strong> {formatCurrency(cardReminder.amount)}</p>
-                <p><strong>Pagamento:</strong> Cartão {CARD_TYPE_LABELS[cardReminder.payment_card_type] || ""}</p>
+                <p><strong>Pagamento:</strong> Cartão {CARD_TYPE_LABELS[cardReminder.payment_card_type] || ""} {cardReminder.payment_card_brand ? `- ${CARD_BRAND_LABELS[cardReminder.payment_card_brand] || cardReminder.payment_card_brand}` : ""}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -346,6 +358,20 @@ export default function Orders() {
           </DialogContent>
         </Dialog>
       )}
+
+      <CreditLimitApprovalPopup
+        open={!!creditLimitOrder}
+        onClose={() => setCreditLimitOrder(null)}
+        order={creditLimitOrder}
+        onApprove={() => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["customers"] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        }}
+        onReject={() => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+        }}
+      />
     </div>
   );
 }

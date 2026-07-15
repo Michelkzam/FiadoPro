@@ -21,6 +21,7 @@ export default function NewOrderDialog({ onClose }) {
   const [quantities, setQuantities] = useState({});
   const [paymentMethod, setPaymentMethod] = useState("");
   const [cardType, setCardType] = useState("");
+  const [cardBrand, setCardBrand] = useState("");
 
   const { data: customers = [] } = useCustomers();
   const { data: products = [], isLoading: loadingProducts } = useActiveProducts();
@@ -115,6 +116,7 @@ export default function NewOrderDialog({ onClose }) {
       table_number: isMesa ? tableNumber.trim() : null,
       payment_method: isOnline ? paymentMethod : null,
       payment_card_type: isOnline && paymentMethod === "cartao" ? cardType : null,
+      payment_card_brand: isOnline && paymentMethod === "cartao" ? cardBrand : null,
     });
   };
 
@@ -291,30 +293,53 @@ export default function NewOrderDialog({ onClose }) {
                 ))}
               </div>
               {paymentMethod === "cartao" && (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCardType("credito")}
-                    className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
-                      cardType === "credito"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    Crédito
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCardType("debito")}
-                    className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
-                      cardType === "debito"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    Débito
-                  </button>
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setCardType("credito"); setCardBrand(""); }}
+                      className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                        cardType === "credito"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Crédito
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCardType("debito"); setCardBrand(""); }}
+                      className={`flex-1 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                        cardType === "debito"
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      Débito
+                    </button>
+                  </div>
+                  {cardType && (
+                    <div className="space-y-1.5 mt-2">
+                      <Label>Bandeira do Cartão *</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
+                          <button
+                            key={brand}
+                            type="button"
+                            onClick={() => setCardBrand(brand)}
+                            className={`py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
+                              cardBrand === brand
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border hover:border-primary/40"
+                            }`}
+                          >
+                            {brand}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
