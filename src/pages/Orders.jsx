@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle, XCircle, Plus, Truck, Calendar, CreditCard, Smartphone, AlertTriangle, Package, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, Plus, Truck, Calendar, CreditCard, Smartphone, AlertTriangle, Package, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -114,9 +114,14 @@ export default function Orders() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Pedidos Online</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Entrega e Retirada</p>
+        <div className="flex items-center gap-3">
+          <Link to="/" className="p-2 rounded-lg hover:bg-muted transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Pedidos Online</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Entrega e Retirada</p>
+          </div>
         </div>
         <Button className="gap-2" onClick={() => setShowNewOrder(true)}>
           <Plus className="w-4 h-4" /> Novo Pedido
