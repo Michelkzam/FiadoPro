@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, MessageCircle, Settings, ChevronDown, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -17,11 +17,7 @@ const navItems = [
   { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
   { path: "/historico", label: "Histórico", icon: History },
   { path: "/relatorios", label: "Relatórios", icon: FileText },
-];
-
-const settingsItems = [
-  { path: "/configuracoes?tab=loja", label: "Minha Loja", icon: Store },
-  { path: "/configuracoes?tab=whatsapp", label: "Canais WhatsApp", icon: MessageCircle },
+  { path: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 function NavItem({ item, isActive, badge, onClick }) {
@@ -45,51 +41,10 @@ function NavItem({ item, isActive, badge, onClick }) {
   );
 }
 
-function SettingsGroup({ isActive, isOpen, onToggle, onClickLink }) {
-  return (
-    <div>
-      <button
-        onClick={onToggle}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full ${
-          isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-        }`}
-      >
-        <Settings className="w-4 h-4" />
-        Configurações
-        <span className="ml-auto">
-          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </span>
-      </button>
-      {isOpen && (
-        <div className="ml-4 mt-1 space-y-1 border-l border-border pl-3">
-          {settingsItems.map((item) => {
-            const Icon = item.icon;
-            const active = location.pathname === "/configuracoes" && window.location.search.includes(item.path.split("?")[1]);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClickLink}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Layout() {
   const location = useLocation();
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const { data: profiles = [] } = useStoreProfile();
   const storeProfile = profiles[0] || null;
   const [darkMode, setDarkMode] = useState(() => {
@@ -109,25 +64,16 @@ export default function Layout() {
 
   const isSettingsPage = location.pathname === "/configuracoes";
 
-  const renderNav = (onClickLink) => (
-    <>
-      {navItems.map((item) => (
-        <NavItem
-          key={item.path}
-          item={item}
-          isActive={location.pathname === item.path}
-          badge={item.path === "/pedidos" ? pendingOrders.length : 0}
-          onClick={onClickLink}
-        />
-      ))}
-      <SettingsGroup
-        isActive={isSettingsPage}
-        isOpen={settingsOpen || isSettingsPage}
-        onToggle={() => setSettingsOpen(!settingsOpen)}
-        onClickLink={onClickLink}
+  const renderNav = (onClickLink) =>
+    navItems.map((item) => (
+      <NavItem
+        key={item.path}
+        item={item}
+        isActive={location.pathname === item.path}
+        badge={item.path === "/pedidos" ? pendingOrders.length : 0}
+        onClick={onClickLink}
       />
-    </>
-  );
+    ));
 
   return (
     <div className="min-h-screen bg-background font-inter">
