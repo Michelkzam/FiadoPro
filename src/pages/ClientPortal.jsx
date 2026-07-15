@@ -32,6 +32,8 @@ export default function ClientPortal() {
   const [storeProfile, setStoreProfile] = useState(null);
   const [pixPaymentAmount, setPixPaymentAmount] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
+  const [cartCardType, setCartCardType] = useState("");
+  const [cartCardBrand, setCartCardBrand] = useState("");
   const [useCredit, setUseCredit] = useState(false);
   const [showCreditLimitPopup, setShowCreditLimitPopup] = useState(false);
 
@@ -148,6 +150,14 @@ export default function ClientPortal() {
       setError("Selecione a forma de pagamento");
       return;
     }
+    if (cartPaymentMethod === "cartao" && !cartCardType) {
+      setError("Selecione se é Crédito ou Débito");
+      return;
+    }
+    if (cartPaymentMethod === "cartao" && !cartCardBrand) {
+      setError("Selecione a bandeira do cartão");
+      return;
+    }
 
     let orderStatus = "pendente";
     let exceedsLimit = false;
@@ -176,6 +186,8 @@ export default function ClientPortal() {
       status: orderStatus,
       service_type: "online_entrega",
       payment_method: cartPaymentMethod,
+      payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
+      payment_card_brand: cartPaymentMethod === "cartao" ? cartCardBrand : null,
     });
 
     if (cartPaymentMethod === "dinheiro" && !exceedsLimit) {
@@ -216,6 +228,8 @@ export default function ClientPortal() {
     setCart([]);
     setExtraRequest("");
     setCartPaymentMethod("");
+    setCartCardType("");
+    setCartCardBrand("");
     setUseCredit(false);
     setCheckoutSent(true);
     setSendingCart(false);
@@ -603,17 +617,18 @@ export default function ClientPortal() {
                     ))}
                   </div>
 
-                  <div className="space-y-2 border-t border-border pt-3">
+                    <div className="space-y-2 border-t border-border pt-3">
                     <p className="text-xs font-semibold text-muted-foreground">Forma de Pagamento *</p>
                     <div className="flex gap-2">
                       {[
                         { value: "dinheiro", label: "Dinheiro", icon: Banknote },
                         { value: "pix", label: "Pix", icon: Smartphone },
+                        { value: "cartao", label: "Cartão", icon: CreditCard },
                       ].map(({ value, label, icon: Icon }) => (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => { setCartPaymentMethod(value); setUseCredit(false); setError(""); }}
+                          onClick={() => { setCartPaymentMethod(value); setCartCardType(""); setCartCardBrand(""); setUseCredit(false); setError(""); }}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
                             cartPaymentMethod === value
                               ? "border-primary bg-primary/5 text-primary"
@@ -648,6 +663,41 @@ export default function ClientPortal() {
                           <p className="text-[11px] text-blue-600 mt-1">
                             A compra será registrada como fiado no saldo da conta
                           </p>
+                        )}
+                      </div>
+                    )}
+
+                    {cartPaymentMethod === "cartao" && (
+                      <div className="space-y-2">
+                        {!cartCardType ? (
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setCartCardType("credito")} className="flex-1 py-2 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
+                              Crédito
+                            </button>
+                            <button type="button" onClick={() => setCartCardType("debito")} className="flex-1 py-2 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
+                              Débito
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-foreground">
+                                Cartão de {cartCardType === "credito" ? "Crédito" : "Débito"} — Bandeira:
+                              </p>
+                              <button type="button" onClick={() => setCartCardType("")} className="text-xs text-primary hover:underline">Trocar</button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
+                                <button key={brand} type="button" onClick={() => setCartCardBrand(brand)}
+                                  className={`py-1.5 px-2 rounded-lg text-[10px] font-medium border transition-colors ${
+                                    cartCardBrand === brand ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"
+                                  }`}
+                                >
+                                  {brand}
+                                </button>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
                     )}
