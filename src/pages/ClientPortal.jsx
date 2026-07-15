@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { generatePixPayload } from "@/utils/pixUtils";
 
+const PORTAL_SESSION_KEY = "fiadopro_portal_session";
+
 export default function ClientPortal() {
   const [step, setStep] = useState("login");
   const [cpf, setCpf] = useState("");
@@ -34,12 +36,47 @@ export default function ClientPortal() {
   const [cardType, setCardType] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
   const [cartCardType, setCartCardType] = useState("");
+  const [cartCardBrand, setCartCardBrand] = useState("");
 
   const normalize = (str) => str.replace(/\D/g, "");
 
   useEffect(() => {
     db.entities.StoreProfile.list().then((p) => { if (p[0]) setStoreProfile(p[0]); }).catch(() => {});
+    restoreSession();
   }, []);
+
+  const restoreSession = async () => {
+    try {
+      const saved = localStorage.getItem(PORTAL_SESSION_KEY);
+      if (!saved) return;
+      const { customerId } = JSON.parse(saved);
+      if (!customerId) return;
+
+      const found = await db.entities.Customer.get(customerId);
+      if (!found) { localStorage.removeItem(PORTAL_SESSION_KEY); return; }
+
+      setCustomer(found);
+      const [txs, ords, prods] = await Promise.all([
+        db.entities.Transaction.filter({ customer_id: found.id }, "-created_at", 200),
+        db.entities.Order.filter({ customer_id: found.id }, "-created_at", 50),
+        db.entities.Product.filter({ available: true }, "category", 200),
+      ]);
+      setTransactions(txs);
+      setOrders(ords);
+      setProducts(prods);
+      setStep("portal");
+    } catch {
+      localStorage.removeItem(PORTAL_SESSION_KEY);
+    }
+  };
+
+  const saveSession = (customerId) => {
+    localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ customerId }));
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(PORTAL_SESSION_KEY);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -69,6 +106,7 @@ export default function ClientPortal() {
       );
 
       if (found) {
+        saveSession(found.id);
         setCustomer(found);
         const [txs, ords, prods] = await Promise.all([
           db.entities.Transaction.filter({ customer_id: found.id }, "-created_at", 200),
@@ -214,7 +252,7 @@ export default function ClientPortal() {
     <div className="min-h-screen bg-background font-inter">
       <header className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <span className="font-semibold">Olá, {customer.name?.split(" ")[0]}</span>
-        <button onClick={() => { setStep("login"); setCustomer(null); }} className="flex items-center gap-1 text-sm hover:bg-white/10 px-2 py-1 rounded">
+        <button onClick={() => { setStep("login"); setCustomer(null); clearSession(); }} className="flex items-center gap-1 text-sm hover:bg-white/10 px-2 py-1 rounded">
           <LogOut className="w-4 h-4" /> Sair
         </button>
       </header>
@@ -647,7 +685,7 @@ export default function ClientPortal() {
                         <button
                           key={value}
                           type="button"
-                          onClick={() => { setCartPaymentMethod(value); if (value !== "cartao") setCartCardType(""); setError(""); }}
+                          onClick={() => { setCartPaymentMethod(value); setCartCardType(""); setCartCardBrand(""); setError(""); }}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
                             cartPaymentMethod === value
                               ? "border-primary bg-primary/5 text-primary"
@@ -658,28 +696,64 @@ export default function ClientPortal() {
                         </button>
                       ))}
                     </div>
+
+                    {cartPaymentMethod === "dinheiro" && (customer.credit_limit || 0) > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                        <p className="text-xs text-blue-700">💡 Você tem crédito de <strong>{formatCurrency(customer.credit_limit)}</strong> disponível</p>
+                      </div>
+                    )}
+
                     {cartPaymentMethod === "cartao" && (
-                      <div className="flex gap-2">
+                      <>
+                        {!cartCardType ? (
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setCartCardType("credito")} className="flex-1 py-1.5 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
+                              Crédito
+                            </button>
+                            <button type="button" onClick={() => setCartCardType("debito")} className="flex-1 py-1.5 rounded-lg border-2 text-xs font-medium border-border hover:border-primary/40">
+                              Débito
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {["Visa", "Mastercard", "Elo", "Hipercard", "Amex", "Outro"].map((brand) => (
+                                <button key={brand} type="button" onClick={() => setCartCardBrand(brand)}
+                                  className={`py-1.5 px-2 rounded-lg text-[10px] font-medium border transition-colors ${
+                                    cartCardBrand === brand ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"
+                                  }`}
+                                >
+                                  {brand}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {cartPaymentMethod === "pix" && storeProfile?.pix_key_1 && (
+                      <div className="bg-white border border-green-200 rounded-lg p-3 flex flex-col items-center">
+                        <QRCodeSVG
+                          value={generatePixPayload({
+                            key: storeProfile.pix_key_1,
+                            amount: cartTotal.toFixed(2),
+                            merchantName: storeProfile.store_name || "Loja",
+                            merchantCity: storeProfile.city || "SAO PAULO",
+                          })}
+                          size={140}
+                          level="M"
+                          includeMargin={true}
+                        />
                         <button
-                          type="button"
-                          onClick={() => setCartCardType("credito")}
-                          className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-medium transition-colors ${
-                            cartCardType === "credito" ? "border-primary bg-primary/5 text-primary" : "border-border"
-                          }`}
+                          onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
+                          className="mt-2 text-xs text-green-600 hover:underline"
                         >
-                          Crédito
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCartCardType("debito")}
-                          className={`flex-1 py-1.5 rounded-lg border-2 text-xs font-medium transition-colors ${
-                            cartCardType === "debito" ? "border-primary bg-primary/5 text-primary" : "border-border"
-                          }`}
-                        >
-                          Débito
+                          📋 Copiar chave Pix
                         </button>
                       </div>
                     )}
+
                     {error && <p className="text-xs text-destructive">{error}</p>}
                   </div>
 
