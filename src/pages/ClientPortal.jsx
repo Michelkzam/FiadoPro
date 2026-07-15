@@ -30,6 +30,7 @@ export default function ClientPortal() {
   const [checkoutSent, setCheckoutSent] = useState(false);
   const [sendingCart, setSendingCart] = useState(false);
   const [storeProfile, setStoreProfile] = useState(null);
+  const [pixPaymentAmount, setPixPaymentAmount] = useState("");
   const [cartPaymentMethod, setCartPaymentMethod] = useState("");
   const [useCredit, setUseCredit] = useState(false);
   const [showCreditLimitPopup, setShowCreditLimitPopup] = useState(false);
@@ -364,6 +365,70 @@ export default function ClientPortal() {
             {pendingOrders.length === 0 && (customer.balance || 0) <= 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p className="text-sm">✅ Sua conta está em dia!</p>
+              </div>
+            )}
+
+            {(customer.balance || 0) > 0 && (
+              <div className="bg-card rounded-xl border border-border shadow-sm p-4 space-y-3">
+                <p className="font-semibold text-foreground text-sm">Pagar com Pix</p>
+                <p className="text-xs text-muted-foreground">Informe o valor e escaneie o QR Code para pagamento</p>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Valor do pagamento (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={customer.balance || 0}
+                    placeholder={formatCurrency(customer.balance || 0)}
+                    value={pixPaymentAmount}
+                    onChange={(e) => setPixPaymentAmount(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPixPaymentAmount(String(customer.balance || 0))}
+                      className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors font-medium"
+                    >
+                      Valor total
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPixPaymentAmount(String(Math.round((customer.balance || 0) / 2 * 100) / 100))}
+                      className="flex-1 py-1.5 text-xs rounded-lg border border-border hover:bg-muted transition-colors font-medium"
+                    >
+                      Metade
+                    </button>
+                  </div>
+                </div>
+
+                {storeProfile?.pix_key_1 && (
+                  <div className="bg-white border border-green-200 rounded-lg p-3 flex flex-col items-center">
+                    <QRCodeSVG
+                      value={generatePixPayload({
+                        key: storeProfile.pix_key_1,
+                        amount: (parseFloat(pixPaymentAmount) || customer.balance || 0).toFixed(2),
+                        merchantName: storeProfile.store_name || "Loja",
+                        merchantCity: storeProfile.city || "SAO PAULO",
+                      })}
+                      size={180}
+                      level="M"
+                      includeMargin={true}
+                    />
+                    <p className="text-lg font-bold text-foreground mt-2">
+                      {formatCurrency(parseFloat(pixPaymentAmount) || customer.balance || 0)}
+                    </p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(storeProfile.pix_key_1); toast.success("Chave Pix copiada!"); }}
+                      className="mt-2 text-xs text-green-600 hover:underline font-medium"
+                    >
+                      📋 Copiar chave Pix
+                    </button>
+                  </div>
+                )}
+                {!storeProfile?.pix_key_1 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">Chave Pix não configurada. Entre em contato com a loja.</p>
+                )}
               </div>
             )}
           </div>
