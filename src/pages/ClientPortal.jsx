@@ -173,22 +173,24 @@ export default function ClientPortal() {
 
     setError("");
     setSendingCart(true);
-    const cartDesc = cart.map((i) => `${i.qty}x ${i.name} (${formatCurrency(i.price)})`).join(", ");
-    const extraDesc = extraRequest.trim() ? `\nOutros: ${extraRequest.trim()}` : "";
-    const desc = cartDesc + extraDesc;
 
-    await db.entities.Order.create({
-      customer_id: customer.id,
-      customer_name: customer.name,
-      customer_phone: customer.phone,
-      description: desc || "Pedido",
-      amount: cartTotal,
-      status: orderStatus,
-      service_type: "online_entrega",
-      payment_method: cartPaymentMethod,
-      payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
-      payment_card_brand: cartPaymentMethod === "cartao" ? cartCardBrand : null,
-    });
+    try {
+      const cartDesc = cart.map((i) => `${i.qty}x ${i.name} (${formatCurrency(i.price)})`).join(", ");
+      const extraDesc = extraRequest.trim() ? `\nOutros: ${extraRequest.trim()}` : "";
+      const desc = cartDesc + extraDesc;
+
+      await db.entities.Order.create({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        customer_phone: customer.phone,
+        description: desc || "Pedido",
+        amount: cartTotal,
+        status: orderStatus,
+        service_type: "online_entrega",
+        payment_method: cartPaymentMethod,
+        payment_card_type: cartPaymentMethod === "cartao" ? cartCardType : null,
+        payment_card_brand: cartPaymentMethod === "cartao" ? cartCardBrand : null,
+      });
 
     if (cartPaymentMethod === "dinheiro" && !exceedsLimit) {
       const { format: formatDate } = await import("date-fns");
@@ -234,6 +236,11 @@ export default function ClientPortal() {
     setCheckoutSent(true);
     setSendingCart(false);
     setTimeout(() => setCheckoutSent(false), 5000);
+    } catch (err) {
+      console.error("Erro ao enviar pedido:", err);
+      setError(`Erro ao enviar pedido: ${err.message || "Tente novamente"}`);
+      setSendingCart(false);
+    }
   };
 
   const grouped = useMemo(() => products.reduce((acc, p) => {
