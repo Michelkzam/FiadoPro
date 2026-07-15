@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setIsLoadingAuth(false);
         setIsAuthenticated(false);
+        setAuthChecked(true);
       }
 
       setAppPublicSettings({ appName: "FiadoPro" });
@@ -35,6 +37,7 @@ export const AuthProvider = ({ children }) => {
       setAuthError({ type: "unknown", message: error.message || "An unexpected error occurred" });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
   };
 
@@ -45,10 +48,12 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+      setAuthChecked(true);
     } catch (error) {
       console.error("User auth check failed:", error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
+      setAuthChecked(true);
 
       if (error.status === 401 || error.status === 403) {
         setAuthError({ type: "auth_required", message: "Authentication required" });
@@ -59,6 +64,7 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
+    setAuthChecked(false);
     db.auth.logout();
     if (shouldRedirect) {
       window.location.href = "/login";
@@ -76,6 +82,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
+      authChecked,
       appPublicSettings,
       logout,
       navigateToLogin,
