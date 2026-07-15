@@ -56,6 +56,29 @@ export default function Home() {
     return { totalDebt, debtors, vendas_dia, totalPayments, pendingOrders, limitExceeded, creditCustomers };
   }, [customers, transactions, orders, today]);
 
+  const paymentByMethod = useMemo(() => {
+    const methods = { dinheiro: 0, pix: 0, cartao: 0, fiado: 0 };
+
+    transactions.forEach((t) => {
+      if (t.type === "pagamento") {
+        const desc = (t.description || "").toLowerCase();
+        if (desc.includes("dinheiro")) methods.dinheiro += t.amount || 0;
+        else if (desc.includes("pix")) methods.pix += t.amount || 0;
+        else if (desc.includes("cartão") || desc.includes("cartao") || desc.includes("crédito") || desc.includes("credito") || desc.includes("débito") || desc.includes("debito")) methods.cartao += t.amount || 0;
+        else methods.dinheiro += t.amount || 0;
+      } else if (t.type === "compra") {
+        methods.fiado += t.amount || 0;
+      }
+    });
+
+    return [
+      { name: "Dinheiro", value: methods.dinheiro, color: "#22c55e" },
+      { name: "Pix", value: methods.pix, color: "#3b82f6" },
+      { name: "Cartão", value: methods.cartao, color: "#8b5cf6" },
+      { name: "Fiado", value: methods.fiado, color: "#ef4444" },
+    ].filter((d) => d.value > 0);
+  }, [transactions]);
+
   const last7 = useMemo(() => {
     const txByDate = new Map();
     for (const t of transactions) {
@@ -302,6 +325,37 @@ export default function Home() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border shadow-sm p-4">
+          <h2 className="font-semibold text-foreground mb-4">Pagamentos por Forma</h2>
+          {paymentByMethod.length === 0 ? (
+            <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">Nenhum pagamento registrado</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={paymentByMethod} layout="vertical" margin={{ top: 0, right: 20, left: 60, bottom: 0 }}>
+                <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `R$${v}`} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={60} />
+                <Tooltip formatter={(v) => formatCurrency(v)} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {paymentByMethod.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          {paymentByMethod.length > 0 && (
+            <div className="flex flex-wrap gap-3 mt-3 justify-center">
+              {paymentByMethod.map((item) => (
+                <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-muted-foreground">{item.name}:</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(item.value)}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
