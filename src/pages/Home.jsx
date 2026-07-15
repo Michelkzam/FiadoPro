@@ -39,11 +39,11 @@ export default function Home() {
   });
   const { data: transactions = [], isLoading: loadingT } = useQuery({
     queryKey: ["transactions"],
-    queryFn: () => db.entities.Transaction.list("-created_date", 200),
+    queryFn: () => db.entities.Transaction.list("-created_at", 200),
   });
   const { data: orders = [], isLoading: loadingO } = useQuery({
     queryKey: ["orders"],
-    queryFn: () => db.entities.Order.list("-created_date", 100),
+    queryFn: () => db.entities.Order.list("-created_at", 100),
   });
 
   const today = useMemo(() => formatDateBR(), []);

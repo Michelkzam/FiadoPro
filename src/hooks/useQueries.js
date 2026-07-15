@@ -21,29 +21,29 @@ export function useTransactions(customerId) {
     queryKey: customerId ? ["transactions", customerId] : ["transactions"],
     queryFn: () =>
       customerId
-        ? db.entities.Transaction.filter({ customer_id: customerId }, "-created_date", 200)
-        : db.entities.Transaction.list("-created_date", 500),
+        ? db.entities.Transaction.filter({ customer_id: customerId }, "-created_at", 200)
+        : db.entities.Transaction.list("-created_at", 500),
   });
 }
 
 export function useAllTransactions() {
   return useQuery({
     queryKey: ["transactions_all"],
-    queryFn: () => db.entities.Transaction.list("-created_date", 1000),
+    queryFn: () => db.entities.Transaction.list("-created_at", 1000),
   });
 }
 
 export function useOrders() {
   return useQuery({
     queryKey: ["orders"],
-    queryFn: () => db.entities.Order.list("-created_date", 500),
+    queryFn: () => db.entities.Order.list("-created_at", 500),
   });
 }
 
 export function usePendingOrders() {
   return useQuery({
     queryKey: ["orders_pending"],
-    queryFn: () => db.entities.Order.filter({ status: "pendente" }, "-created_date", 100),
+    queryFn: () => db.entities.Order.filter({ status: "pendente" }, "-created_at", 100),
     refetchInterval: 30000,
   });
 }

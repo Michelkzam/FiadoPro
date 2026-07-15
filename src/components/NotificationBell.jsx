@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Bell, BellRing, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { Bell, BellRing, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function NotificationBell() {
@@ -12,8 +12,9 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
+
     const channel = supabase
-      .channel("notifications-changes")
+      .channel("notifications-realtime")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
@@ -21,11 +22,15 @@ export default function NotificationBell() {
           setNotifications((prev) => [payload.new, ...prev]);
           setUnreadCount((prev) => prev + 1);
           if (permission === "granted") {
-            new Notification(payload.new.title, {
-              body: payload.new.body,
-              icon: "/favicon.svg",
-              tag: payload.new.tag || `notif-${payload.new.id}`,
-            });
+            try {
+              new Notification(payload.new.title, {
+                body: payload.new.body,
+                icon: "/favicon.svg",
+                tag: payload.new.tag || `notif-${payload.new.id}`,
+              });
+            } catch {
+              // notification failed silently
+            }
           }
         }
       )
@@ -34,7 +39,7 @@ export default function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [permission]);
+  }, []);
 
   const fetchNotifications = async () => {
     const { data } = await supabase

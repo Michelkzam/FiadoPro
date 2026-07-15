@@ -60,7 +60,7 @@ export default function Orders() {
   };
 
   const filtered = useMemo(() => orders.filter((o) => {
-    const orderDate = new Date(o.created_date).toLocaleDateString("pt-BR");
+    const orderDate = new Date(o.created_at).toLocaleDateString("pt-BR");
     const dateMatch = !dateFilter || orderDate === dateFilter;
     const statusMatch = filter === "todos" ? true : o.status === filter;
     return dateMatch && statusMatch;
@@ -153,7 +153,7 @@ export default function Orders() {
             <tbody className="divide-y divide-border">
               {filtered.map((order) => {
                 const cfg = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.pendente;
-                const createdAt = new Date(order.created_date);
+                const createdAt = new Date(order.created_at);
                 return (
                   <tr key={order.id} className="hover:bg-muted/20">
                     <td className="px-4 py-3">

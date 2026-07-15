@@ -63,8 +63,8 @@ export default function ClientPortal() {
       if (found) {
         setCustomer(found);
         const [txs, ords, prods] = await Promise.all([
-          db.entities.Transaction.filter({ customer_id: found.id }, "-created_date", 200),
-          db.entities.Order.filter({ customer_id: found.id }, "-created_date", 50),
+          db.entities.Transaction.filter({ customer_id: found.id }, "-created_at", 200),
+          db.entities.Order.filter({ customer_id: found.id }, "-created_at", 50),
           db.entities.Product.filter({ available: true }, "category", 200),
         ]);
         setTransactions(txs);
