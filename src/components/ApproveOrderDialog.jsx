@@ -1,10 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Send, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { useActiveProducts } from "@/hooks/useQueries";
 import { formatCurrency } from "@/lib/constants";
+
+function parseOrderItems(description) {
+  if (!description) return {};
+  const items = {};
+  const regex = /(\d+)x\s+(.+?)(?:\s*\(|$)/gi;
+  let match;
+  while ((match = regex.exec(description)) !== null) {
+    const qty = parseInt(match[1]) || 1;
+    const name = match[2].trim().toLowerCase();
+    items[name] = qty;
+  }
+  return items;
+}
+
+function matchProductName(orderName, productName) {
+  return productName.toLowerCase().includes(orderName) || orderName.includes(productName.toLowerCase());
+}
 
 export default function ApproveOrderDialog({ order, onConfirm, onClose }) {
   const [loading, setLoading] = useState(false);
@@ -14,13 +31,34 @@ export default function ApproveOrderDialog({ order, onConfirm, onClose }) {
 
   const { data: products = [], isLoading } = useActiveProducts();
 
+  useEffect(() => {
+    if (products.length > 0 && order?.description) {
+      const parsed = parseOrderItems(order.description);
+      const newChecked = {};
+      const newQty = {};
+
+      products.forEach((p) => {
+        for (const [orderName, orderQty] of Object.entries(parsed)) {
+          if (matchProductName(orderName, p.name)) {
+            newChecked[p.id] = true;
+            newQty[p.id] = orderQty;
+            break;
+          }
+        }
+      });
+
+      setCheckedProducts(newChecked);
+      setQuantities(newQty);
+    }
+  }, [products, order?.description]);
+
   const toggleProduct = (pid) => {
     setCheckedProducts((prev) => ({ ...prev, [pid]: !prev[pid] }));
     if (!quantities[pid]) setQuantities((prev) => ({ ...prev, [pid]: 1 }));
   };
 
   const setQty = (pid, val) => {
-    const v = parseInt(val) || 1;
+    const v = Math.max(1, parseInt(val) || 1);
     setQuantities((prev) => ({ ...prev, [pid]: v }));
   };
 
