@@ -212,18 +212,25 @@ export default function Orders() {
                 return (
                   <tr key={order.id} className="hover:bg-muted/20">
                     <td className="px-4 py-3">
-                      {order.customer_id ? (
-                        <Link to={`/clientes/${order.customer_id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                          {order.customer_name}
-                        </Link>
-                      ) : (
-                        <span className="font-medium text-foreground">{order.customer_name}</span>
-                      )}
-                      {order.table_number && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                          Mesa {order.table_number}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                          {order.customer_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          {order.customer_id ? (
+                            <Link to={`/clientes/${order.customer_id}`} className="font-semibold text-foreground text-sm hover:text-primary transition-colors block truncate">
+                              {order.customer_name}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-foreground text-sm block truncate">{order.customer_name}</span>
+                          )}
+                          {order.table_number && (
+                            <span className="inline-flex items-center gap-1 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium mt-0.5">
+                              Mesa {order.table_number}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${serviceCfg.color}`}>
