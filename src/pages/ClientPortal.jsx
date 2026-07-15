@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { ShieldCheck, LogOut, ClipboardList, History, ShoppingBag, Package, Plus, Minus, Trash2, Send, CreditCard, Smartphone, Banknote } from "lucide-react";
 import BalanceBadge from "../components/BalanceBadge";
 import db from "@/lib/db";
-import { formatCurrency, openWhatsApp, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
+import { formatCurrency, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
 export default function ClientPortal() {
   const [step, setStep] = useState("login");
@@ -301,7 +302,7 @@ export default function ClientPortal() {
                       onClick={() => {
                         if (storeProfile?.phone) {
                           const msg = `Olá! Sou ${customer.name} e gostaria de pagar minha conta de ${formatCurrency(customer.balance || 0)} no cartão ${cardBrand}.`;
-                          openWhatsApp(storeProfile.phone, msg);
+                          sendWhatsApp(storeProfile.phone, msg);
                         }
                       }}
                     >
@@ -402,7 +403,7 @@ export default function ClientPortal() {
                             onClick={() => {
                               if (storeProfile?.phone) {
                                 const msg = `Olá! Sou ${customer.name} e gostaria de pagar o pedido: "${o.description}" no valor de ${formatCurrency(o.amount)}.`;
-                                openWhatsApp(storeProfile.phone, msg);
+                          sendWhatsApp(storeProfile.phone, msg);
                               }
                             }}
                             className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors"

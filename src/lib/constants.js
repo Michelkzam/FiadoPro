@@ -99,9 +99,3 @@ export const generateAccessCode = () => {
 };
 
 export const sanitizePhone = (phone) => (phone || "").replace(/\D/g, "");
-
-export const openWhatsApp = (phone, message) => {
-  const clean = sanitizePhone(phone);
-  if (!clean) return;
-  window.open(`https://wa.me/55${clean}?text=${encodeURIComponent(message)}`, "_blank");
-};

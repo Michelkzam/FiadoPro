@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import db from "@/lib/db";
-import { formatCurrency, openWhatsApp } from "@/lib/constants";
+import { formatCurrency } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { notifyPaymentReceived } from "@/lib/notify";
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -111,7 +112,7 @@ Nós do ${storeName} agradecemos a preferência
         }
       }
 
-      openWhatsApp(customer.phone, msg);
+      sendWhatsApp(customer.phone, msg);
     },
     [customer]
   );
@@ -155,7 +156,7 @@ export function useOrderActions() {
           `*Dívida anterior:* ${prevFmt}\n` +
           `*Total em débito:* ${newFmt}\n\n` +
           `Qualquer dúvida, entre em contato. 😊`;
-        openWhatsApp(order.customer_phone, msg);
+        sendWhatsApp(order.customer_phone, msg);
       }
 
       return true;
@@ -175,7 +176,7 @@ export function useOrderActions() {
       };
 
       if (messages[status]) {
-        openWhatsApp(customer.phone, messages[status]);
+        sendWhatsApp(customer.phone, messages[status]);
       }
     }
   }, []);

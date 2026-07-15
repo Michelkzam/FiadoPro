@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import db from "@/lib/db";
 import { useCustomer, useTransactions } from "@/hooks/useQueries";
-import { formatCurrency, openWhatsApp } from "@/lib/constants";
+import { formatCurrency } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -35,15 +36,15 @@ export default function CustomerDetail() {
     if (!customer?.phone) return;
     const credit = formatCurrency(Math.abs(customer.balance));
     const msg = `Olá ${customer.name}! Você possui um *saldo positivo* de *${credit}* disponível na nossa loja. Esse crédito pode ser utilizado na sua próxima compra. Obrigado! 😊`;
-    openWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg);
   };
 
-  const sendWhatsApp = (transaction) => {
+  const sendReceiptWhatsApp = (transaction) => {
     if (!customer?.phone) return;
     const msg = transaction
       ? `*Recibo de ${transaction.type === "compra" ? "Compra" : "Pagamento"}*\n\nCliente: ${customer.name}\nData: ${transaction.date}\nValor: ${formatCurrency(transaction.amount)}\n\n*Saldo devedor: ${formatCurrency(customer.balance || 0)}*`
       : `Olá ${customer.name}, seu saldo devedor atual é de *${formatCurrency(customer.balance || 0)}*. Entre em contato para mais informações.`;
-    openWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg);
   };
 
   if (isLoading) {
@@ -157,7 +158,7 @@ export default function CustomerDetail() {
                   <Button variant="ghost" size="sm" onClick={() => downloadTransactionPDF(customer, t)} title="Baixar recibo PDF">
                     <FileDown className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => sendWhatsApp(t)} title="Enviar recibo via WhatsApp">
+                  <Button variant="ghost" size="sm" onClick={() => sendReceiptWhatsApp(t)} title="Enviar recibo via WhatsApp">
                     <Send className="w-3.5 h-3.5" />
                   </Button>
                 </div>

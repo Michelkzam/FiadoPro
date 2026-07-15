@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { format } from "date-fns";
 import db from "@/lib/db";
-import { formatCurrency, PAYMENT_METHODS, openWhatsApp } from "@/lib/constants";
+import { formatCurrency, PAYMENT_METHODS } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
 export default function PaymentDialog({ customer, onClose, onSuccess }) {
   const [paymentType, setPaymentType] = useState("unico");
@@ -60,7 +61,7 @@ export default function PaymentDialog({ customer, onClose, onSuccess }) {
         saldoMsg = `Saldo restante em aberto: *${formatCurrency(newBalance)}*.`;
       }
       const msg = `Olá ${customer.name}! Recebemos seu pagamento de *${formatCurrency(total)}*.\n\n${saldoMsg}\n\nObrigado!`;
-      openWhatsApp(customer.phone, msg);
+      sendWhatsApp(customer.phone, msg);
     }
 
     toast.success("Pagamento registrado!");

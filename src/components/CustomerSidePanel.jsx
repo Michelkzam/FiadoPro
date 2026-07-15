@@ -2,7 +2,8 @@ import { X, Phone, Mail, MapPin, Send, TrendingDown, TrendingUp, Link2 } from "l
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useCustomer } from "@/hooks/useQueries";
-import { formatCurrency, openWhatsApp } from "@/lib/constants";
+import { formatCurrency } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
 export default function CustomerSidePanel({ customerId, onClose }) {
   const { data: customer, isLoading } = useCustomer(customerId);
@@ -11,7 +12,7 @@ export default function CustomerSidePanel({ customerId, onClose }) {
     if (!customer?.phone) return;
     const credit = formatCurrency(Math.abs(customer.balance));
     const msg = `Olá ${customer.name}! Você possui um *saldo positivo* de *${credit}* disponível na nossa loja. Esse crédito pode ser utilizado na sua próxima compra. Obrigado! 😊`;
-    openWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg);
   };
 
   const balance = customer?.balance || 0;

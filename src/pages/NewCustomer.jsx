@@ -7,7 +7,8 @@ import { useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import db from "@/lib/db";
-import { generateAccessCode, openWhatsApp } from "@/lib/constants";
+import { generateAccessCode } from "@/lib/constants";
+import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { notifyNewCustomer } from "@/lib/notify";
 
 export default function NewCustomer() {
@@ -20,7 +21,7 @@ export default function NewCustomer() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const sendWhatsApp = (customer, code) => {
+  const sendWelcomeWhatsApp = async (customer, code) => {
     if (!customer.phone) return;
     const docLabel = docType === "cnpj" ? "CNPJ" : "CPF";
     const docValue = customer.cpf || "";
@@ -29,15 +30,15 @@ export default function NewCustomer() {
       `${docLabel}: ${docValue}\n` +
       `Código de Acesso: ${code}\n\n` +
       `Acesse o portal para consultar seu saldo e fazer pedidos. 😊`;
-    openWhatsApp(customer.phone, msg);
+    await sendWhatsApp(customer.phone, msg);
   };
 
   const create = useMutation({
     mutationFn: (data) => {
       const code = generateAccessCode();
       return db.entities.Customer.create({ ...data, balance: 0, status: "ativo", access_code: code })
-        .then((created) => {
-          sendWhatsApp(created, created.access_code || code);
+        .then(async (created) => {
+          await sendWelcomeWhatsApp(created, created.access_code || code);
           notifyNewCustomer(created.name);
           return created;
         });
