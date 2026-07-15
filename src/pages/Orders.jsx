@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { CheckCircle, XCircle, Plus, Truck, Calendar, CreditCard, Smartphone, AlertTriangle, Package, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle, XCircle, Plus, Truck, Calendar, CreditCard, Smartphone, AlertTriangle, Package, ArrowRight, ArrowLeft, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
