@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle, Clock, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, CreditCard, Banknote, Smartphone, XCircle, AlertTriangle } from "lucide-react";
 import { useComandaActions } from "@/hooks/useActions";
 import { useComandaItems } from "@/hooks/useQueries";
 import { formatCurrency, COMANDA_STATUS_CONFIG, PAYMENT_METHODS } from "@/lib/constants";
 import AddComandaItemDialog from "./AddComandaItemDialog";
 
 export default function ComandaDetail({ comanda, onClose, onUpdate }) {
-  const { removeItem, closeComanda, reopenComanda, updateItemStatus, loading } = useComandaActions();
+  const { removeItem, closeComanda, reopenComanda, cancelComanda, updateItemStatus, loading } = useComandaActions();
   const { data: items = [], refetch } = useComandaItems(comanda?.id);
   const [showAddItem, setShowAddItem] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [confirmRemoveItem, setConfirmRemoveItem] = useState(null);
+  const [confirmCancelComanda, setConfirmCancelComanda] = useState(false);
 
   if (!comanda) return null;
 
@@ -21,8 +23,10 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
 
   const handleRemoveItem = async (itemId) => {
     await removeItem(itemId, comanda.id);
+    setConfirmRemoveItem(null);
     refetch();
     onUpdate?.();
+    toast.success("Item removido!");
   };
 
   const handleMarkDelivered = async (itemId) => {
@@ -42,6 +46,14 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
     await reopenComanda(comanda.id);
     toast.success("Comanda reaberta!");
     onUpdate?.();
+  };
+
+  const handleCancelComanda = async () => {
+    await cancelComanda(comanda.id);
+    toast.success("Comanda cancelada!");
+    setConfirmCancelComanda(false);
+    onUpdate?.();
+    onClose();
   };
 
   return (
@@ -110,7 +122,7 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
                         </button>
                       )}
                       <button
-                        onClick={() => handleRemoveItem(item.id)}
+                        onClick={() => setConfirmRemoveItem(item)}
                         className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg"
                         title="Remover item"
                       >
@@ -133,12 +145,22 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
             </div>
 
             {isOpen ? (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={onClose} className="flex-1">
-                  Fechar
-                </Button>
-                <Button onClick={() => setShowPayment(true)} disabled={comanda.total <= 0} className="flex-1 gap-2">
-                  <CreditCard className="w-4 h-4" /> Fechar e Pagar
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={onClose} className="flex-1">
+                    Fechar
+                  </Button>
+                  <Button onClick={() => setShowPayment(true)} disabled={comanda.total <= 0} className="flex-1 gap-2">
+                    <CreditCard className="w-4 h-4" /> Pagar
+                  </Button>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full gap-1.5"
+                  onClick={() => setConfirmCancelComanda(true)}
+                >
+                  <XCircle className="w-3.5 h-3.5" /> Cancelar Comanda
                 </Button>
               </div>
             ) : comanda.status === "fechada" ? (
@@ -147,12 +169,12 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
                   <Clock className="w-4 h-4" /> Reabrir
                 </Button>
                 <Button onClick={() => setShowPayment(true)} disabled={comanda.total <= 0} className="flex-1 gap-2">
-                  <CreditCard className="w-4 h-4" /> Registrar Pagamento
+                  <CreditCard className="w-4 h-4" /> Pagamento
                 </Button>
               </div>
             ) : (
               <p className="text-sm text-center text-green-600 font-medium">
-                ✓ Comanda paga via {PAYMENT_METHODS.find(m => m.value === comanda.payment_method)?.label || comanda.payment_method}
+                ✓ Paga via {PAYMENT_METHODS.find(m => m.value === comanda.payment_method)?.label || comanda.payment_method}
               </p>
             )}
           </div>
@@ -199,6 +221,47 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {confirmRemoveItem && (
+        <AlertDialog open onOpenChange={() => setConfirmRemoveItem(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover item?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Remover <strong>{confirmRemoveItem.product_name}</strong> ({formatCurrency(confirmRemoveItem.subtotal)}) desta comanda?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleRemoveItem(confirmRemoveItem.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {confirmCancelComanda && (
+        <AlertDialog open onOpenChange={() => setConfirmCancelComanda(false)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                Cancelar Comanda?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação irá <strong>excluir permanentemente</strong> a comanda <strong>{comanda.label}</strong> e todos os seus {items.length} item(ns). Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Não, manter</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelComanda} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Sim, cancelar comanda
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

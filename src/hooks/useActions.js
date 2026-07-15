@@ -278,5 +278,19 @@ export function useComandaActions() {
     await db.entities.Comanda.update(comandaId, { status: "aberta", payment_method: null });
   }, []);
 
-  return { addItem, removeItem, updateItemStatus, closeComanda, reopenComanda, loading };
+  const cancelComanda = useCallback(async (comandaId) => {
+    setLoading(true);
+    try {
+      const items = await db.entities.ComandaItem.filter({ comanda_id: comandaId }, "-created_at", 500);
+      for (const item of items) {
+        await db.entities.ComandaItem.delete(item.id);
+      }
+      await db.entities.Comanda.delete(comandaId);
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { addItem, removeItem, updateItemStatus, closeComanda, reopenComanda, cancelComanda, loading };
 }
