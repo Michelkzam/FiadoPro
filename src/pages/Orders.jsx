@@ -157,9 +157,18 @@ export default function Orders() {
                 return (
                   <tr key={order.id} className="hover:bg-muted/20">
                     <td className="px-4 py-3">
-                      <Link to={`/clientes/${order.customer_id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                        {order.customer_name}
-                      </Link>
+                      {order.customer_id ? (
+                        <Link to={`/clientes/${order.customer_id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                          {order.customer_name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-foreground">{order.customer_name}</span>
+                      )}
+                      {order.table_number && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                          <ClipboardList className="w-3 h-3" /> Mesa {order.table_number}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {createdAt.toLocaleDateString("pt-BR")} às {createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
