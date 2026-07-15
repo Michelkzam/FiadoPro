@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogTitleUI } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, Trash2, CheckCircle, Clock, CreditCard, Banknote, Smartphone, XCircle, AlertTriangle } from "lucide-react";
@@ -227,7 +228,7 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
         <AlertDialog open onOpenChange={() => setConfirmRemoveItem(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remover item?</AlertDialogTitle>
+              <AlertDialogTitleUI>Remover item?</AlertDialogTitleUI>
               <AlertDialogDescription>
                 Remover <strong>{confirmRemoveItem.product_name}</strong> ({formatCurrency(confirmRemoveItem.subtotal)}) desta comanda?
               </AlertDialogDescription>
@@ -246,10 +247,10 @@ export default function ComandaDetail({ comanda, onClose, onUpdate }) {
         <AlertDialog open onOpenChange={() => setConfirmCancelComanda(false)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
+              <AlertDialogTitleUI className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-destructive" />
                 Cancelar Comanda?
-              </AlertDialogTitle>
+              </AlertDialogTitleUI>
               <AlertDialogDescription>
                 Esta ação irá <strong>excluir permanentemente</strong> a comanda <strong>{comanda.label}</strong> e todos os seus {items.length} item(ns). Esta ação não pode ser desfeita.
               </AlertDialogDescription>
