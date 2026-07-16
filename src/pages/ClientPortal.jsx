@@ -49,7 +49,7 @@ export default function ClientPortal() {
       supabase.rpc("portal_get_orders", { p_customer_id: customerId, p_limit: 50 }),
       supabase.rpc("portal_get_products", { p_limit: 200 }),
     ]);
-    if (customerResult.data) setCustomer(customerResult.data);
+    if (customerResult.data?.length > 0) setCustomer(customerResult.data[0]);
     if (txsResult.data) setTransactions(txsResult.data);
     if (ordsResult.data) setOrders(ordsResult.data);
     if (prodsResult.data) setProducts(prodsResult.data);
@@ -58,8 +58,8 @@ export default function ClientPortal() {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: profile } = await supabase.rpc("portal_get_store_profile");
-        if (profile) setStoreProfile(profile);
+        const { data: profiles } = await supabase.rpc("portal_get_store_profile");
+        if (profiles?.length > 0) setStoreProfile(profiles[0]);
       } catch {}
 
       const saved = localStorage.getItem(PORTAL_SESSION_KEY);
@@ -107,11 +107,12 @@ export default function ClientPortal() {
   }, [step, customer?.id, loadPortalData]);
 
   const handleLogin = async (cpf, accessCode) => {
-    const { data: found, error: rpcError } = await supabase.rpc("portal_login", {
+    const { data: rows, error: rpcError } = await supabase.rpc("portal_login", {
       p_cpf: cpf,
       p_access_code: accessCode,
     });
-    if (rpcError || !found) throw new Error("CPF ou código de acesso inválido");
+    if (rpcError || !rows || rows.length === 0) throw new Error("CPF ou código de acesso inválido");
+    const found = rows[0];
 
     localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify({ customerId: found.id }));
     localStorage.setItem(PORTAL_SESSION_EXPIRY, String(Date.now() + SESSION_DURATION_MS));
@@ -178,12 +179,13 @@ export default function ClientPortal() {
           p_description: `Pedido online - ${cartDesc}`,
         });
 
-        const { data: newBalance, error: balanceError } = await supabase.rpc("portal_update_balance", {
+        const { data: balanceRows, error: balanceError } = await supabase.rpc("portal_update_balance", {
           p_customer_id: customer.id,
           p_amount: cartTotal,
           p_type: "compra",
         });
         if (balanceError) throw balanceError;
+        const newBalance = balanceRows?.[0]?.balance ?? 0;
         setCustomer((prev) => ({ ...prev, balance: newBalance }));
 
         if (storeProfile?.phone) {
