@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import db from "@/lib/db";
 import { formatCurrency, ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { toast } from "sonner";
