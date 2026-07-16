@@ -43,23 +43,23 @@ export default function ClientPortal() {
   }, [darkMode]);
 
   const loadPortalData = useCallback(async (customerId) => {
-    const [found, txs, ords, prods] = await Promise.all([
-      db.entities.Customer.get(customerId),
-      db.entities.Transaction.filter({ customer_id: customerId }, "-created_at", 200),
-      db.entities.Order.filter({ customer_id: customerId }, "-created_at", 50),
-      db.entities.Product.filter({ available: true }, "category", 200),
+    const [customerResult, txsResult, ordsResult, prodsResult] = await Promise.all([
+      supabase.rpc("portal_get_customer", { p_customer_id: customerId }),
+      supabase.rpc("portal_get_transactions", { p_customer_id: customerId, p_limit: 200 }),
+      supabase.rpc("portal_get_orders", { p_customer_id: customerId, p_limit: 50 }),
+      supabase.rpc("portal_get_products", { p_limit: 200 }),
     ]);
-    setCustomer(found);
-    setTransactions(txs);
-    setOrders(ords);
-    setProducts(prods);
+    if (customerResult.data) setCustomer(customerResult.data);
+    if (txsResult.data) setTransactions(txsResult.data);
+    if (ordsResult.data) setOrders(ordsResult.data);
+    if (prodsResult.data) setProducts(prodsResult.data);
   }, []);
 
   useEffect(() => {
     const init = async () => {
       try {
-        const profiles = await db.entities.StoreProfile.list();
-        if (profiles[0]) setStoreProfile(profiles[0]);
+        const { data: profile } = await supabase.rpc("portal_get_store_profile");
+        if (profile) setStoreProfile(profile);
       } catch {}
 
       const saved = localStorage.getItem(PORTAL_SESSION_KEY);
@@ -152,33 +152,33 @@ export default function ClientPortal() {
         }
       }
 
-      await db.entities.Order.create({
-        customer_id: customer.id,
-        customer_name: customer.name,
-        customer_phone: customer.phone,
-        description: cartDesc,
-        amount: cartTotal,
-        status: orderStatus,
-        service_type: "online_entrega",
-        payment_method: paymentMethod,
-        payment_card_type: paymentMethod === "cartao" ? cardType : null,
-        payment_card_brand: paymentMethod === "cartao" ? cardBrand : null,
+      await supabase.rpc("portal_create_order", {
+        p_customer_id: customer.id,
+        p_customer_name: customer.name,
+        p_customer_phone: customer.phone,
+        p_description: cartDesc,
+        p_amount: cartTotal,
+        p_status: orderStatus,
+        p_service_type: "online_entrega",
+        p_payment_method: paymentMethod,
+        p_payment_card_type: paymentMethod === "cartao" ? cardType : null,
+        p_payment_card_brand: paymentMethod === "cartao" ? cardBrand : null,
       });
 
       if (paymentMethod === "dinheiro" && !exceedsLimit) {
         const { format: formatDate } = await import("date-fns");
         const now = new Date();
-        await db.entities.Transaction.create({
-          customer_id: customer.id,
-          customer_name: customer.name,
-          type: "compra",
-          amount: cartTotal,
-          date: formatDate(now, "dd/MM/yyyy"),
-          time: formatDate(now, "HH:mm"),
-          description: `Pedido online - ${cartDesc}`,
+        await supabase.rpc("portal_create_transaction", {
+          p_customer_id: customer.id,
+          p_customer_name: customer.name,
+          p_type: "compra",
+          p_amount: cartTotal,
+          p_date: formatDate(now, "dd/MM/yyyy"),
+          p_time: formatDate(now, "HH:mm"),
+          p_description: `Pedido online - ${cartDesc}`,
         });
 
-        const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+        const { data: newBalance, error: balanceError } = await supabase.rpc("portal_update_balance", {
           p_customer_id: customer.id,
           p_amount: cartTotal,
           p_type: "compra",
