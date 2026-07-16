@@ -206,6 +206,11 @@ export const entities = {
   CanalWhatsApp: createEntityService("canais_whatsapp"),
   ClienteCanal: createEntityService("clientes_canal"),
   HistoricoEnvios: createEntityService("historico_envios"),
+  ConexaoRede: createEntityService("conexoes_redes"),
+  Campanha: createEntityService("campanhas"),
+  CampanhaMidia: createEntityService("campanha_midia"),
+  FilaEnvio: createEntityService("fila_envio"),
+  CampanhaAnalytics: createEntityService("campanha_analytics"),
 };
 
 export { ApiError, clearTokens, storeTokens, getStoredToken };
