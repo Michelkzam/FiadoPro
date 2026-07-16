@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, Store, MessageSquare, CreditCard, Bell, Percent, Shield, RotateCcw } from "lucide-react";
+import { Settings as SettingsIcon, Store, MessageSquare, CreditCard, Bell, Percent, Shield, RotateCcw, Bot } from "lucide-react";
 import StoreProfilePage from "./StoreProfilePage";
 import WhatsAppChannels from "./WhatsAppChannels";
+import WhatsAppCRM from "../components/WhatsAppCRM";
 import CouponsPage from "./CouponsPage";
 import AuditLogPage from "./AuditLogPage";
 import BusinessRulesSettings from "../components/BusinessRulesSettings";
@@ -11,6 +12,7 @@ const tabs = [
   { id: "business", label: "Regras de Negócio", icon: SettingsIcon },
   { id: "coupons", label: "Cupons", icon: Percent },
   { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+  { id: "crm", label: "Assistente CRM", icon: Bot },
   { id: "audit", label: "Auditoria", icon: Shield },
 ];
 
@@ -44,6 +46,7 @@ export default function Settings() {
         {activeTab === "business" && <BusinessRulesSettings />}
         {activeTab === "coupons" && <CouponsPage />}
         {activeTab === "whatsapp" && <WhatsAppChannels />}
+        {activeTab === "crm" && <WhatsAppCRM />}
         {activeTab === "audit" && <AuditLogPage />}
       </div>
     </div>
