@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     const { data: conexoes, error: connError } = await supabase
       .from("conexoes_redes")
       .select("*")
-      .in("rede_social", campanhas.canais)
+      .in("rede_social", campanha.canais)
       .eq("status", "ativo");
 
     if (connError) throw connError;
