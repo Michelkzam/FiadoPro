@@ -1,49 +1,50 @@
 import { useState } from "react";
-import { Store, MessageCircle, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Settings as SettingsIcon, Store, MessageSquare, CreditCard, Bell, Percent, Shield, RotateCcw } from "lucide-react";
 import StoreProfilePage from "./StoreProfilePage";
 import WhatsAppChannels from "./WhatsAppChannels";
+import CouponsPage from "./CouponsPage";
+import AuditLogPage from "./AuditLogPage";
+import BusinessRulesSettings from "../components/BusinessRulesSettings";
 
 const tabs = [
-  { id: "loja", label: "Minha Loja", icon: Store },
-  { id: "whatsapp", label: "Canais WhatsApp", icon: MessageCircle },
+  { id: "store", label: "Perfil da Loja", icon: Store },
+  { id: "business", label: "Regras de Negócio", icon: SettingsIcon },
+  { id: "coupons", label: "Cupons", icon: Percent },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+  { id: "audit", label: "Auditoria", icon: Shield },
 ];
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState("loja");
+  const [activeTab, setActiveTab] = useState("store");
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link to="/" className="p-2 rounded-lg hover:bg-muted transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-      </div>
-
-      <div className="flex gap-0 border-b border-border overflow-x-auto">
-        {tabs.map(({ id, label, icon: Icon }) => {
-          const active = activeTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                active
-                  ? "bg-primary/10 text-primary border-b-2 border-primary -mb-[1px]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
       <div>
-        {activeTab === "loja" && <StoreProfilePage />}
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+        <p className="text-sm text-muted-foreground">Gerencie as configurações do sistema</p>
+      </div>
+
+      <div className="flex border-b border-border overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 py-3 px-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        {activeTab === "store" && <StoreProfilePage />}
+        {activeTab === "business" && <BusinessRulesSettings />}
+        {activeTab === "coupons" && <CouponsPage />}
         {activeTab === "whatsapp" && <WhatsAppChannels />}
+        {activeTab === "audit" && <AuditLogPage />}
       </div>
     </div>
   );

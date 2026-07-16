@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings, Clock, Percent, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -15,8 +15,11 @@ const navItems = [
   { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
   { path: "/produtos", label: "Produtos", icon: Package },
   { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
+  { path: "/fila-espera", label: "Fila de Espera", icon: Clock },
   { path: "/historico", label: "Histórico", icon: History },
   { path: "/relatorios", label: "Relatórios", icon: FileText },
+  { path: "/cupons", label: "Cupons", icon: Percent },
+  { path: "/auditoria", label: "Auditoria", icon: Shield },
   { path: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 

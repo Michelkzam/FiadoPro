@@ -31,6 +31,9 @@ const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const UserNotRegisteredError = lazy(() => import("./components/UserNotRegisteredError"));
+const WaitingListPage = lazy(() => import("./pages/WaitingListPage"));
+const CouponsPage = lazy(() => import("./pages/CouponsPage"));
+const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 
 const LoadingSpinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -83,6 +86,9 @@ const AuthenticatedApp = () => {
             <Route path="/enviar-cardapio" element={<MenuSender />} />
             <Route path="/relatorios" element={<Reports />} />
             <Route path="/historico" element={<FinancialHistory />} />
+            <Route path="/fila-espera" element={<WaitingListPage />} />
+            <Route path="/cupons" element={<CouponsPage />} />
+            <Route path="/auditoria" element={<AuditLogPage />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />
