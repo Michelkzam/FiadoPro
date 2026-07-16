@@ -7,47 +7,60 @@ CREATE OR REPLACE FUNCTION portal_get_customer(p_customer_id UUID)
 RETURNS JSON AS $$
 DECLARE result JSON;
 BEGIN
-  SELECT row_to_json(c) INTO result
+  SELECT row_to_json(c) INTO STRICT result
   FROM customers c
   WHERE c.id = p_customer_id AND c.status = 'ativo';
-  IF result IS NULL THEN RAISE EXCEPTION 'Cliente não encontrado'; END IF;
   RETURN result;
+EXCEPTION WHEN NO_DATA_FOUND THEN
+  RAISE EXCEPTION 'Cliente não encontrado';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Get customer transactions for portal
 CREATE OR REPLACE FUNCTION portal_get_transactions(p_customer_id UUID, p_limit INTEGER DEFAULT 200)
-RETURNS SETOF transactions AS $$
+RETURNS JSON AS $$
+DECLARE result JSON;
 BEGIN
-  RETURN QUERY
-  SELECT * FROM transactions
-  WHERE customer_id = p_customer_id
-  ORDER BY created_at DESC
-  LIMIT p_limit;
+  SELECT COALESCE(json_agg(t), '[]'::json) INTO result
+  FROM (
+    SELECT * FROM transactions
+    WHERE customer_id = p_customer_id
+    ORDER BY created_at DESC
+    LIMIT p_limit
+  ) t;
+  RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Get customer orders for portal
 CREATE OR REPLACE FUNCTION portal_get_orders(p_customer_id UUID, p_limit INTEGER DEFAULT 50)
-RETURNS SETOF orders AS $$
+RETURNS JSON AS $$
+DECLARE result JSON;
 BEGIN
-  RETURN QUERY
-  SELECT * FROM orders
-  WHERE customer_id = p_customer_id
-  ORDER BY created_at DESC
-  LIMIT p_limit;
+  SELECT COALESCE(json_agg(o), '[]'::json) INTO result
+  FROM (
+    SELECT * FROM orders
+    WHERE customer_id = p_customer_id
+    ORDER BY created_at DESC
+    LIMIT p_limit
+  ) o;
+  RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Get active products for portal
 CREATE OR REPLACE FUNCTION portal_get_products(p_limit INTEGER DEFAULT 200)
-RETURNS SETOF products AS $$
+RETURNS JSON AS $$
+DECLARE result JSON;
 BEGIN
-  RETURN QUERY
-  SELECT * FROM products
-  WHERE available = true
-  ORDER BY category, name
-  LIMIT p_limit;
+  SELECT COALESCE(json_agg(p), '[]'::json) INTO result
+  FROM (
+    SELECT * FROM products
+    WHERE available = true
+    ORDER BY category, name
+    LIMIT p_limit
+  ) p;
+  RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -57,8 +70,10 @@ RETURNS JSON AS $$
 DECLARE result JSON;
 BEGIN
   SELECT row_to_json(sp) INTO result
-  FROM store_profiles sp
-  LIMIT 1;
+  FROM (SELECT * FROM store_profiles LIMIT 1) sp;
+  IF result IS NULL THEN
+    result := '{}'::json;
+  END IF;
   RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
