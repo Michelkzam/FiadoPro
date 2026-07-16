@@ -30,7 +30,7 @@ export function useTransactions(customerId) {
 export function useAllTransactions() {
   return useQuery({
     queryKey: ["transactions_all"],
-    queryFn: () => db.entities.Transaction.list("-created_at", 1000),
+    queryFn: () => db.entities.Transaction.list("-created_at", 500),
   });
 }
 
@@ -110,7 +110,7 @@ export function useClientesCanal(canalId) {
     queryFn: () =>
       canalId
         ? db.entities.ClienteCanal.filter({ canal_id: canalId }, "-criado_em", 500)
-        : db.entities.ClienteCanal.list("-criado_em", 1000),
+        : db.entities.ClienteCanal.list("-criado_em", 200),
     enabled: !!canalId,
   });
 }

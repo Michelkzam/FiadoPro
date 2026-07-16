@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { ShieldCheck, LogOut, ClipboardList, History, ShoppingBag, Package, Plus, Minus, Trash2, Send, CreditCard, Smartphone, Banknote } from "lucide-react";
 import BalanceBadge from "../components/BalanceBadge";
 import db from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { formatCurrency, parseDateToTimestamp, ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { toast } from "sonner";
@@ -98,27 +99,28 @@ export default function ClientPortal() {
         return;
       }
 
-      const matchingCustomers = await db.entities.Customer.list("-created_at", 1000);
+      const { data: found, error: rpcError } = await supabase.rpc("portal_login", {
+        p_cpf: normalizedCpf,
+        p_access_code: accessCode,
+      });
 
-      const found = matchingCustomers.find(
-        (c) => normalize(c.cpf) === normalizedCpf && c.access_code?.toUpperCase() === accessCode
-      );
-
-      if (found) {
-        saveSession(found.id);
-        setCustomer(found);
-        const [txs, ords, prods] = await Promise.all([
-          db.entities.Transaction.filter({ customer_id: found.id }, "-created_at", 200),
-          db.entities.Order.filter({ customer_id: found.id }, "-created_at", 50),
-          db.entities.Product.filter({ available: true }, "category", 200),
-        ]);
-        setTransactions(txs);
-        setOrders(ords);
-        setProducts(prods);
-        setStep("portal");
-      } else {
+      if (rpcError || !found) {
         setError("CPF ou código de acesso inválido");
+        setLoading(false);
+        return;
       }
+
+      saveSession(found.id);
+      setCustomer(found);
+      const [txs, ords, prods] = await Promise.all([
+        db.entities.Transaction.filter({ customer_id: found.id }, "-created_at", 200),
+        db.entities.Order.filter({ customer_id: found.id }, "-created_at", 50),
+        db.entities.Product.filter({ available: true }, "category", 200),
+      ]);
+      setTransactions(txs);
+      setOrders(ords);
+      setProducts(prods);
+      setStep("portal");
     } catch {
       setError("Erro ao verificar credenciais");
     }
@@ -205,9 +207,13 @@ export default function ClientPortal() {
         description: `Pedido online - ${cartDesc}`,
       });
 
-      const currentCustomer = await db.entities.Customer.get(customer.id);
-      const newBalance = (currentCustomer.balance || 0) + cartTotal;
-      await db.entities.Customer.update(customer.id, { balance: newBalance });
+      const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+        p_customer_id: customer.id,
+        p_amount: cartTotal,
+        p_type: "compra",
+      });
+
+      if (balanceError) throw balanceError;
 
       setCustomer((prev) => ({ ...prev, balance: newBalance }));
 

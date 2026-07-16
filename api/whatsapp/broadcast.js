@@ -55,7 +55,10 @@ const buildCardapioMessage = (products, storeName, customMessage = "") => {
   }
 
   msg += `🛒 *Faça seu pedido:* https://fiado-pro.vercel.app/portal\n`;
-  msg += `💬 *Fale conosco:* https://wa.me/5511999999999\n`;
+  if (storeProfile?.phone) {
+    const cleanPhone = storeProfile.phone.replace(/\D/g, "");
+    msg += `💬 *Fale conosco:* https://wa.me/${cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`}\n`;
+  }
   msg += `\nObrigado pela preferência! 😊`;
 
   return msg;
@@ -87,6 +90,19 @@ const sendWhatsAppMessage = async (phoneNumberId, to, message) => {
   return data;
 };
 
+const verifyAuth = async (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return null;
+  }
+  const token = authHeader.split(" ")[1];
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    return null;
+  }
+  return user;
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -98,6 +114,11 @@ export default async function handler(req, res) {
 
   if (!metaAccessToken || !phoneNumberId) {
     return res.status(500).json({ error: "META_ACCESS_TOKEN e META_PHONE_NUMBER_ID são obrigatórios" });
+  }
+
+  const user = await verifyAuth(req);
+  if (!user) {
+    return res.status(401).json({ error: "Não autorizado. Faça login para continuar." });
   }
 
   try {

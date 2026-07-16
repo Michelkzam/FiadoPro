@@ -81,8 +81,12 @@ export const formatCurrency = (value) => CURRENCY_FORMATTER.format(value || 0);
 export const parseDateBR = (dateStr) => {
   if (!dateStr) return new Date(0);
   if (dateStr.includes("/")) {
-    const [dd, mm, yyyy] = dateStr.split("/");
-    return new Date(`${yyyy}-${mm}-${dd}`);
+    const [dd, mm, yyyy] = dateStr.split("/").map(Number);
+    const date = new Date(yyyy, mm - 1, dd);
+    if (date.getDate() !== dd || date.getMonth() !== mm - 1) {
+      return new Date(0);
+    }
+    return date;
   }
   return new Date(dateStr);
 };

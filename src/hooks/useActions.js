@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import db from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { notifyPaymentReceived } from "@/lib/notify";
@@ -24,12 +25,7 @@ export function useTransactionActions(customer) {
           throw new Error("Cliente não encontrado");
         }
 
-        const currentBalance = currentCustomer.balance || 0;
         const parsedAmount = parseFloat(amount);
-        const newBalance =
-          type === "compra"
-            ? currentBalance + parsedAmount
-            : currentBalance - parsedAmount;
 
         const now = new Date();
         const dateStr = format(now, "dd/MM/yyyy");
@@ -45,7 +41,13 @@ export function useTransactionActions(customer) {
           description,
         });
 
-        await db.entities.Customer.update(customer.id, { balance: newBalance });
+        const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+          p_customer_id: customer.id,
+          p_amount: parsedAmount,
+          p_type: type,
+        });
+
+        if (balanceError) throw balanceError;
 
         return { newBalance, type, amount: parsedAmount };
       } catch (error) {
@@ -128,7 +130,6 @@ export function useOrderActions() {
     try {
       const customer = await db.entities.Customer.get(order.customer_id);
       const previousBalance = customer?.balance || 0;
-      const newBalance = previousBalance + total;
 
       await db.entities.Order.update(order.id, { status: "aprovado" });
 
@@ -142,7 +143,13 @@ export function useOrderActions() {
         description: order.description || "Pedido aprovado",
       });
 
-      await db.entities.Customer.update(order.customer_id, { balance: newBalance });
+      const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+        p_customer_id: order.customer_id,
+        p_amount: total,
+        p_type: "compra",
+      });
+
+      if (balanceError) throw balanceError;
 
       if (order.customer_phone) {
         const totalFmt = formatCurrency(total);
@@ -250,8 +257,6 @@ export function useComandaActions() {
       if (comanda.customer_id && comanda.total > 0) {
         const customer = await db.entities.Customer.get(comanda.customer_id);
         if (customer) {
-          const currentBalance = customer.balance || 0;
-          const newBalance = currentBalance + comanda.total;
           const now = new Date();
           const { format: formatDate } = await import("date-fns");
 
@@ -265,7 +270,13 @@ export function useComandaActions() {
             description: `Comanda Mesa ${comanda.table_number} - ${comanda.label}`,
           });
 
-          await db.entities.Customer.update(comanda.customer_id, { balance: newBalance });
+          const { error: balanceError } = await supabase.rpc("update_customer_balance", {
+            p_customer_id: comanda.customer_id,
+            p_amount: comanda.total,
+            p_type: "compra",
+          });
+
+          if (balanceError) throw balanceError;
         }
       }
 

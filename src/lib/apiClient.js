@@ -79,14 +79,14 @@ export const auth = {
 };
 
 export const createEntityService = (tableName) => ({
-  list: async (sortBy = "created_at", limit = 100) => {
+  list: async (sortBy = "created_at", limit = 100, offset = 0) => {
     const descending = sortBy.startsWith("-");
     const field = sortBy.replace("-", "");
     const { data, error } = await supabase
       .from(tableName)
       .select("*")
       .order(field, { ascending: !descending })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
     if (error) handleSupabaseError(error);
     return data || [];
   },
@@ -101,7 +101,7 @@ export const createEntityService = (tableName) => ({
     return data;
   },
 
-  filter: async (filters, sortBy = "created_at", limit = 100) => {
+  filter: async (filters, sortBy = "created_at", limit = 100, offset = 0) => {
     const descending = sortBy.startsWith("-");
     const field = sortBy.replace("-", "");
     let query = supabase.from(tableName).select("*");
@@ -110,7 +110,7 @@ export const createEntityService = (tableName) => ({
     });
     const { data, error } = await query
       .order(field, { ascending: !descending })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
     if (error) handleSupabaseError(error);
     return data || [];
   },
@@ -143,6 +143,16 @@ export const createEntityService = (tableName) => ({
       .eq("id", id);
     if (error) handleSupabaseError(error);
     return { success: true };
+  },
+
+  count: async (filters = {}) => {
+    let query = supabase.from(tableName).select("*", { count: "exact", head: true });
+    Object.entries(filters).forEach(([key, value]) => {
+      query = query.eq(key, value);
+    });
+    const { count, error } = await query;
+    if (error) handleSupabaseError(error);
+    return count || 0;
   },
 
   subscribe: (callback) => {
