@@ -34,6 +34,7 @@ const UserNotRegisteredError = lazy(() => import("./components/UserNotRegistered
 const WaitingListPage = lazy(() => import("./pages/WaitingListPage"));
 const CouponsPage = lazy(() => import("./pages/CouponsPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
+const Cadastros = lazy(() => import("./pages/Cadastros"));
 
 const LoadingSpinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -89,6 +90,8 @@ const AuthenticatedApp = () => {
             <Route path="/fila-espera" element={<WaitingListPage />} />
             <Route path="/cupons" element={<CouponsPage />} />
             <Route path="/auditoria" element={<AuditLogPage />} />
+            <Route path="/cadastros" element={<Cadastros />} />
+            <Route path="/cadastros/:tab" element={<Cadastros />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />
