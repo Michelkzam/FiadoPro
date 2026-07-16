@@ -2,6 +2,16 @@
 -- 014: Portal RPCs (bypass RLS for client portal)
 -- =============================================
 
+-- Drop existing functions to change return types
+DROP FUNCTION IF EXISTS portal_get_customer(UUID);
+DROP FUNCTION IF EXISTS portal_get_transactions(UUID, INTEGER);
+DROP FUNCTION IF EXISTS portal_get_orders(UUID, INTEGER);
+DROP FUNCTION IF EXISTS portal_get_products(INTEGER);
+DROP FUNCTION IF EXISTS portal_get_store_profile();
+DROP FUNCTION IF EXISTS portal_create_order(UUID, TEXT, TEXT, TEXT, NUMERIC, TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS portal_create_transaction(UUID, TEXT, TEXT, NUMERIC, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS portal_update_balance(UUID, NUMERIC, TEXT);
+
 -- Get customer data for portal
 CREATE OR REPLACE FUNCTION portal_get_customer(p_customer_id UUID)
 RETURNS JSON AS $$
