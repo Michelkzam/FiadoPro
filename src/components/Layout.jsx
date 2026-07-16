@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings, Clock } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings, Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -10,14 +10,16 @@ import NotificationBell from "@/components/NotificationBell";
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/mesas", label: "Mesas", icon: Table },
-  { path: "/clientes", label: "Clientes", icon: Users },
-  { path: "/compras", label: "Compras", icon: ShoppingCart },
-  { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
-  { path: "/produtos", label: "Produtos", icon: Package },
-  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
   { path: "/fila-espera", label: "Fila de Espera", icon: Clock },
+  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
+  { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
+  { path: "/compras", label: "Vendas", icon: ShoppingCart },
   { path: "/historico", label: "Histórico", icon: History },
   { path: "/relatorios", label: "Relatórios", icon: FileText },
+  { group: "cadastros", label: "Cadastros", icon: Package, children: [
+    { path: "/clientes", label: "Clientes", icon: Users },
+    { path: "/produtos", label: "Produtos", icon: Package },
+  ]},
   { path: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
@@ -39,6 +41,38 @@ function NavItem({ item, isActive, badge, onClick }) {
         </span>
       )}
     </Link>
+  );
+}
+
+function NavGroup({ item, isActive, location, onClick }) {
+  const [open, setOpen] = useState(() => {
+    return item.children?.some((child) => location.pathname === child.path) || false;
+  });
+  const Icon = item.icon;
+  const groupActive = item.children?.some((child) => location.pathname === child.path);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full ${
+          groupActive ? "text-primary" : "text-foreground hover:bg-muted"
+        }`}
+      >
+        <Icon className="w-4 h-4" />
+        {item.label}
+        <span className="ml-auto">
+          {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </span>
+      </button>
+      {open && (
+        <div className="ml-4 mt-1 space-y-1 border-l border-border pl-3">
+          {item.children.map((child) => (
+            <NavItem key={child.path} item={child} isActive={location.pathname === child.path} onClick={onClick} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -66,15 +100,27 @@ export default function Layout() {
   const isSettingsPage = location.pathname === "/configuracoes";
 
   const renderNav = (onClickLink) =>
-    navItems.map((item) => (
-      <NavItem
-        key={item.path}
-        item={item}
-        isActive={location.pathname === item.path}
-        badge={item.path === "/pedidos" ? pendingOrders.length : 0}
-        onClick={onClickLink}
-      />
-    ));
+    navItems.map((item) => {
+      if (item.group) {
+        return (
+          <NavGroup
+            key={item.group}
+            item={item}
+            location={location}
+            onClick={onClickLink}
+          />
+        );
+      }
+      return (
+        <NavItem
+          key={item.path}
+          item={item}
+          isActive={location.pathname === item.path}
+          badge={item.path === "/pedidos" ? pendingOrders.length : 0}
+          onClick={onClickLink}
+        />
+      );
+    });
 
   return (
     <div className="min-h-screen bg-background font-inter">
