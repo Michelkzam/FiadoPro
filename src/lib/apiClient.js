@@ -66,7 +66,17 @@ export const auth = {
     return { success: true };
   },
 
-  resetPassword: async (token, password) => {
+  resetPassword: async (accessToken, password) => {
+    const hash = window.location.hash;
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const refreshToken = hashParams.get("refresh_token");
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (sessionError) handleSupabaseError(sessionError);
+
     const { error } = await supabase.auth.updateUser({ password });
     if (error) handleSupabaseError(error);
     return { success: true };
