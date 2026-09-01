@@ -10,12 +10,18 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    try { await db.auth.forgotPassword(email); } catch {}
-    setSent(true);
+    setError("");
+    try {
+      await db.auth.forgotPassword(email);
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "Erro ao enviar e-mail. Tente novamente.");
+    }
     setLoading(false);
   };
 
@@ -33,6 +39,7 @@ export default function ForgotPassword() {
         ) : (
           <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-6 space-y-4">
             <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Enviando..." : "Enviar Link"}</Button>
             <Link to="/login" className="block text-center text-sm text-primary hover:underline">Voltar ao login</Link>
           </form>
