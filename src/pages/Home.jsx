@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ShoppingCart, Package, Clock, AlertTriangle, TrendingUp, DollarSign, ArrowRight, Table, ClipboardList, Send, History, FileText, Settings } from "lucide-react";
+import { Users, ShoppingCart, Package, AlertTriangle, TrendingUp, DollarSign, ArrowRight, Table, ClipboardList, Send } from "lucide-react";
 import { useCustomers, useOrders, useProducts, useTransactions, usePendingOrders } from "@/hooks/useQueries";
 import { useCashflow, useDelinquentCustomers, useMonthlyComparison } from "@/hooks/useReports";
 import { formatCurrency } from "@/lib/constants";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 

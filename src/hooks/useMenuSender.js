@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import db from "@/lib/db";
-import { sendBulkMessages, checkConnection, configureWhatsApp, getConfig } from "@/services/whatsappApi";
+import { sendBulkMessages, checkConnection, configureWhatsApp } from "@/services/whatsappApi";
 import { formatCurrency, formatDateBR, STORE_NAME_FALLBACK } from "@/lib/constants";
 
 const STORAGE_KEY = "whatsapp_config";

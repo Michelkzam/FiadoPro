@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Plus, Search, Phone, ChevronRight, Filter } from "lucide-react";
+import { Plus, Search, Phone, ChevronRight, Filter, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
@@ -13,9 +13,11 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["customers"],
     queryFn: () => db.entities.Customer.list(),
+    retry: 2,
+    refetchOnWindowFocus: true,
   });
 
   const filtered = useMemo(() => customers.filter((c) => {
@@ -33,6 +35,37 @@ export default function Customers() {
 
   if (isLoading) {
     return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+          <Link to="/clientes/novo">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" /> Novo Cliente
+            </Button>
+          </Link>
+        </div>
+        <div className="bg-card rounded-xl border border-destructive/50 shadow-sm p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
+          <p className="text-foreground font-medium">Erro ao carregar clientes</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {error?.message || "Não foi possível conectar ao banco de dados"}
+          </p>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            className="mt-4 gap-2"
+            disabled={isFetching}
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+            {isFetching ? "Tentando..." : "Tentar Novamente"}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

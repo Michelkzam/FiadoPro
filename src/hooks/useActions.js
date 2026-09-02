@@ -172,19 +172,25 @@ export function useOrderActions() {
     }
   }, []);
 
-  const updateOrderStatus = useCallback((orderId, status, customer) => {
-    db.entities.Order.update(orderId, { status });
+  const updateOrderStatus = useCallback(async (orderId, status, customer) => {
+    try {
+      await db.entities.Order.update(orderId, { status });
 
-    if (customer?.phone) {
-      const messages = {
-        recusado: `❌ *Pedido Recusado*\n\nOlá ${customer.name}, seu pedido não pôde ser aprovado no momento.\n\nObrigado pela compreensão! 😊`,
-        saiu_para_entrega: `🚚 *Pedido Saiu para Entrega!*\n\nOlá ${customer.name}, seu pedido saiu para entrega e chegará em breve! 😊`,
-        finalizado: `✅ *Pedido Finalizado!*\n\nOlá ${customer.name}, seu pedido foi entregue com sucesso! Obrigado pela preferência! 😊`,
-      };
+      if (customer?.phone) {
+        const messages = {
+          recusado: `❌ *Pedido Recusado*\n\nOlá ${customer.name}, seu pedido não pôde ser aprovado no momento.\n\nObrigado pela compreensão! 😊`,
+          saiu_para_entrega: `🚚 *Pedido Saiu para Entrega!*\n\nOlá ${customer.name}, seu pedido saiu para entrega e chegará em breve! 😊`,
+          finalizado: `✅ *Pedido Finalizado!*\n\nOlá ${customer.name}, seu pedido foi entregue com sucesso! Obrigado pela preferência! 😊`,
+        };
 
-      if (messages[status]) {
-        sendWhatsApp(customer.phone, messages[status]);
+        if (messages[status]) {
+          sendWhatsApp(customer.phone, messages[status]);
+        }
       }
+      return true;
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      throw error;
     }
   }, []);
 

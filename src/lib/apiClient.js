@@ -24,6 +24,7 @@ const clearTokens = () => {
 };
 
 const handleSupabaseError = (error) => {
+  console.error("[Supabase Error]", error);
   throw new ApiError(error.message || "Erro na operação", error.status || 500, error);
 };
 
@@ -84,20 +85,26 @@ export const auth = {
 
   isAuthenticated: async () => {
     const { data: { session } } = await supabase.auth.getSession();
+    console.log("[Auth] Session exists:", !!session, "user:", session?.user?.id);
     return !!session;
   },
 };
 
 export const createEntityService = (tableName) => ({
-  list: async (sortBy = "created_at", limit = 100, offset = 0) => {
+  list: async (sortBy = "created_at", limit = 1000, offset = 0) => {
     const descending = sortBy.startsWith("-");
     const field = sortBy.replace("-", "");
+    console.log("[API] Listing", tableName, "sortBy:", field, "limit:", limit);
     const { data, error } = await supabase
       .from(tableName)
       .select("*")
       .order(field, { ascending: !descending })
       .range(offset, offset + limit - 1);
-    if (error) handleSupabaseError(error);
+    if (error) {
+      console.error("[API] List error:", error);
+      handleSupabaseError(error);
+    }
+    console.log("[API] List result:", data?.length || 0, "records");
     return data || [];
   },
 
@@ -111,7 +118,7 @@ export const createEntityService = (tableName) => ({
     return data;
   },
 
-  filter: async (filters, sortBy = "created_at", limit = 100, offset = 0) => {
+  filter: async (filters, sortBy = "created_at", limit = 1000, offset = 0) => {
     const descending = sortBy.startsWith("-");
     const field = sortBy.replace("-", "");
     let query = supabase.from(tableName).select("*");
@@ -126,12 +133,17 @@ export const createEntityService = (tableName) => ({
   },
 
   create: async (record) => {
+    console.log("[API] Creating record in", tableName, ":", record);
     const { data, error } = await supabase
       .from(tableName)
       .insert(record)
       .select()
       .single();
-    if (error) handleSupabaseError(error);
+    if (error) {
+      console.error("[API] Create error:", error);
+      handleSupabaseError(error);
+    }
+    console.log("[API] Create success:", data);
     return data;
   },
 

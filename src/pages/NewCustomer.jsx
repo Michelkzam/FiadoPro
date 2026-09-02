@@ -38,15 +38,27 @@ export default function NewCustomer() {
       const code = generateAccessCode();
       return db.entities.Customer.create({ ...data, balance: 0, status: "ativo", access_code: code })
         .then(async (created) => {
-          await sendWelcomeWhatsApp(created, created.access_code || code);
+          if (!created) {
+            throw new Error("Falha ao criar cliente - nenhum dado retornado");
+          }
+          try {
+            await sendWelcomeWhatsApp(created, created.access_code || code);
+          } catch (whatsappError) {
+            console.warn("Erro ao enviar WhatsApp (cadastro salvo):", whatsappError);
+          }
           notifyNewCustomer(created.name);
           return created;
         });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success("Cliente cadastrado! Dados enviados via WhatsApp.");
+      toast.success("Cliente cadastrado com sucesso!");
       navigate("/clientes");
+    },
+    onError: (error) => {
+      console.error("Erro ao cadastrar cliente:", error);
+      const message = error?.message || error?.data?.message || "Erro ao cadastrar cliente. Tente novamente.";
+      toast.error(message);
     },
   });
 

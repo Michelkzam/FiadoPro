@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatCurrency, ORDER_STATUS_CONFIG } from "@/lib/constants";
+import { formatCurrency } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { toast } from "sonner";
 import PortalLogin from "@/components/portal/PortalLogin";

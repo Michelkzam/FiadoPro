@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import db from "@/lib/db";
 
 export function useTransactionReversal() {
   const [loading, setLoading] = useState(false);

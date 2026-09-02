@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Search, Plus, Minus, Trash2, Send, CreditCard, Smartphone, Banknote, X, ShoppingBag } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Send, CreditCard, Smartphone, Banknote, X } from "lucide-react";
 import { formatCurrency } from "@/lib/constants";
 import { QRCodeSVG } from "qrcode.react";
 import { generatePixPayload } from "@/utils/pixUtils";

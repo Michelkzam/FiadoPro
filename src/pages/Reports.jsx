@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { Button } from "@/components/ui/button";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, TrendingUp, TrendingDown, Users, Package, Clock, AlertTriangle, DollarSign, ShoppingCart } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Package, DollarSign, ShoppingCart } from "lucide-react";
 import { useCashflow, useCustomerRanking, useProductRanking, useDelinquentCustomers, useMonthlyComparison, usePeakHours, useDemandForecast, useProfitMargin } from "@/hooks/useReports";
 import { formatCurrency } from "@/lib/constants";
 import { useCustomers, useTransactions, useOrders } from "@/hooks/useQueries";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, Store, MessageSquare, CreditCard, Bell, Percent, Shield, RotateCcw, Bot, Send } from "lucide-react";
+import { Settings as SettingsIcon, Store, MessageSquare, Percent, Shield, Bot, Send } from "lucide-react";
 import StoreProfilePage from "./StoreProfilePage";
 import WhatsAppChannels from "./WhatsAppChannels";
 import WhatsAppCRM from "../components/WhatsAppCRM";

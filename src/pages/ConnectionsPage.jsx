@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Plus, Wifi, WifiOff, Trash2, RefreshCw, CheckCircle, XCircle,
-  MessageSquare, Camera, Video, Globe, ExternalLink
+  Plus, Wifi, Trash2, CheckCircle, XCircle, ExternalLink
 } from "lucide-react";
 import db from "@/lib/db";
 

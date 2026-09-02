@@ -6,6 +6,8 @@ export function useCustomers() {
   return useQuery({
     queryKey: ["customers"],
     queryFn: () => db.entities.Customer.list(),
+    retry: 2,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -54,6 +56,8 @@ export function useProducts() {
   return useQuery({
     queryKey: ["products"],
     queryFn: () => db.entities.Product.list("category", 200),
+    retry: 2,
+    refetchOnWindowFocus: true,
   });
 }
 

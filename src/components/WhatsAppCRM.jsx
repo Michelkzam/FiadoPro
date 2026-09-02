@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Bot, Send, Copy, Check, User, DollarSign, Clock, Beer, PartyPopper,
-  MessageCircle, Sparkles, ArrowRight, ChevronDown, Store, Phone, X, RefreshCw
+  Bot, Send, Copy, Check, DollarSign, Clock, Beer, PartyPopper,
+  MessageCircle, Sparkles, RefreshCw
 } from "lucide-react";
 import { useCustomers, useStoreProfile } from "@/hooks/useQueries";
 import { formatCurrency } from "@/lib/constants";

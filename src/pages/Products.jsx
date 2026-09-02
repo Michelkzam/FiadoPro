@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Package, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ImageIcon } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ImageIcon, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import LoadingSpinner from "../components/LoadingSpinner";
 import db from "@/lib/db";
@@ -21,7 +21,7 @@ export default function Products() {
   const [form, setForm] = useState(emptyForm);
   const [uploading, setUploading] = useState(false);
 
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, error, refetch, isFetching } = useProducts();
 
   const saveMutation = useMutation({
     mutationFn: (data) =>
@@ -35,6 +35,10 @@ export default function Products() {
       setForm(emptyForm);
       toast.success(editing ? "Produto atualizado!" : "Produto cadastrado!");
     },
+    onError: (error) => {
+      console.error("Erro ao salvar produto:", error);
+      toast.error(error?.message || "Erro ao salvar produto. Tente novamente.");
+    },
   });
 
   const deleteMutation = useMutation({
@@ -42,6 +46,10 @@ export default function Products() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Produto removido!");
+    },
+    onError: (error) => {
+      console.error("Erro ao remover produto:", error);
+      toast.error(error?.message || "Erro ao remover produto. Tente novamente.");
     },
   });
 
@@ -105,6 +113,38 @@ export default function Products() {
   }, {});
 
   if (isLoading) return <LoadingSpinner />;
+
+  if (error) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Package className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold text-foreground">Produtos / Cardápio</h1>
+          </div>
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="w-4 h-4" /> Novo Produto
+          </Button>
+        </div>
+        <div className="bg-card rounded-xl border border-destructive/50 shadow-sm p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
+          <p className="text-foreground font-medium">Erro ao carregar produtos</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {error?.message || "Não foi possível conectar ao banco de dados"}
+          </p>
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            className="mt-4 gap-2"
+            disabled={isFetching}
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+            {isFetching ? "Tentando..." : "Tentar Novamente"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

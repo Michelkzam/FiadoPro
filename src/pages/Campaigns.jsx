@@ -5,13 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Plus, Send, Clock, CheckCircle, XCircle, AlertTriangle, Eye, Trash2,
-  MessageSquare, Image, Video, FileText, Calendar, Users, Zap, Settings,
-  RefreshCw, BarChart3, ChevronDown, ChevronRight, Play, Pause, Copy
+  Plus, Send, Clock, CheckCircle, XCircle, AlertTriangle, Trash2, FileText, Calendar, Users, Zap,
+  RefreshCw, Play, Pause
 } from "lucide-react";
-import { useCustomers, useStoreProfile } from "@/hooks/useQueries";
+import { useCustomers } from "@/hooks/useQueries";
 import db from "@/lib/db";
-import { formatCurrency } from "@/lib/constants";
 
 const REDES_SOCIAIS = [
   { id: "whatsapp", label: "WhatsApp", color: "green", icon: "💬" },

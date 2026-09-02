@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Save, CreditCard, AlertTriangle, Clock, Percent, DollarSign, ShoppingCart, Bell } from "lucide-react";
+import { Save, CreditCard, DollarSign, ShoppingCart, Bell } from "lucide-react";
 import db from "@/lib/db";
 import { toast } from "sonner";
 
