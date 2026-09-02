@@ -64,7 +64,9 @@ export default function NewCustomer() {
     },
     onError: (error) => {
       console.error("Erro ao cadastrar cliente:", error);
-      const message = error?.message || error?.data?.message || "Erro ao cadastrar cliente. Tente novamente.";
+      console.error("Erro completo:", JSON.stringify(error, null, 2));
+      const detail = error?.data?.details || error?.data?.hint || error?.data?.code || "";
+      const message = `${error?.message || "Erro ao cadastrar cliente"}${detail ? " — " + detail : ""}`;
       toast.error(message);
     },
   });

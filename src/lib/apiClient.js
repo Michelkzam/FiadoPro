@@ -24,8 +24,14 @@ const clearTokens = () => {
 };
 
 const handleSupabaseError = (error) => {
-  console.error("[Supabase Error]", error);
-  throw new ApiError(error.message || "Erro na operação", error.status || 500, error);
+  console.error("[Supabase Error] full object:", JSON.stringify(error, null, 2));
+  console.error("[Supabase Error] message:", error?.message);
+  console.error("[Supabase Error] code:", error?.code);
+  console.error("[Supabase Error] details:", error?.details);
+  console.error("[Supabase Error] hint:", error?.hint);
+  console.error("[Supabase Error] statusCode:", error?.statusCode);
+  const msg = error?.message || error?.details || error?.hint || "Erro na operação";
+  throw new ApiError(msg, error?.statusCode || error?.status || 500, error);
 };
 
 export const auth = {
@@ -133,14 +139,15 @@ export const createEntityService = (tableName) => ({
   },
 
   create: async (record) => {
-    console.log("[API] Creating record in", tableName, ":", record);
-    const { data, error } = await supabase
+    console.log("[API] Creating record in", tableName, ":", JSON.stringify(record, null, 2));
+    const { data, error, status, statusText } = await supabase
       .from(tableName)
       .insert(record)
       .select()
       .single();
     if (error) {
-      console.error("[API] Create error:", error);
+      console.error("[API] Create error status:", status, statusText);
+      console.error("[API] Create error:", JSON.stringify(error, null, 2));
       handleSupabaseError(error);
     }
     console.log("[API] Create success:", data);
