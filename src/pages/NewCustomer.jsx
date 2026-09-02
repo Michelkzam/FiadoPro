@@ -36,7 +36,14 @@ export default function NewCustomer() {
   const create = useMutation({
     mutationFn: (data) => {
       const code = generateAccessCode();
-      return db.entities.Customer.create({ ...data, balance: 0, status: "ativo", access_code: code })
+      const payload = {
+        ...data,
+        credit_limit: parseFloat(data.credit_limit) || 0,
+        balance: 0,
+        status: "ativo",
+        access_code: code,
+      };
+      return db.entities.Customer.create(payload)
         .then(async (created) => {
           if (!created) {
             throw new Error("Falha ao criar cliente - nenhum dado retornado");

@@ -30,7 +30,10 @@ export default function EditCustomer() {
   }, [customer, form]);
 
   const update = useMutation({
-    mutationFn: (data) => db.entities.Customer.update(id, data),
+    mutationFn: (data) => {
+      const payload = { ...data, credit_limit: parseFloat(data.credit_limit) || 0 };
+      return db.entities.Customer.update(id, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customer", id] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
