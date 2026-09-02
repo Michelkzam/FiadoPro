@@ -145,18 +145,53 @@ export const createEntityService = (tableName) => ({
       throw new ApiError("Sessão expirada. Faça login novamente.", 401);
     }
     console.log("[API] Creating record in", tableName, ":", JSON.stringify(record, null, 2));
-    const { data, error, status, statusText } = await supabase
-      .from(tableName)
-      .insert(record)
-      .select()
-      .single();
-    if (error) {
-      console.error("[API] Create error status:", status, statusText);
-      console.error("[API] Create error:", JSON.stringify(error, null, 2));
-      handleSupabaseError(error);
+
+    // Fallback: fetch direto ao Supabase REST API para capturar erro 400 com detalhes
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${session.access_token}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(record),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`[API] Fetch fallback ${res.status} ${res.statusText}:`, body);
+        throw new ApiError(
+          `Erro ${res.status}: ${body}`,
+          res.status,
+          { raw: body }
+        );
+      }
+
+      const rows = await res.json();
+      const data = Array.isArray(rows) ? rows[0] : rows;
+      console.log("[API] Create success:", data);
+      return data;
+    } catch (fetchErr) {
+      // Se o fetch direto falhar, usar Supabase client como fallback
+      console.warn("[API] Fetch fallback failed, trying Supabase client:", fetchErr.message);
+      const { data, error, status, statusText } = await supabase
+        .from(tableName)
+        .insert(record)
+        .select()
+        .single();
+      if (error) {
+        console.error("[API] Create error status:", status, statusText);
+        console.error("[API] Create error:", JSON.stringify(error, null, 2));
+        handleSupabaseError(error);
+      }
+      console.log("[API] Create success:", data);
+      return data;
     }
-    console.log("[API] Create success:", data);
-    return data;
   },
 
   update: async (id, updates) => {
