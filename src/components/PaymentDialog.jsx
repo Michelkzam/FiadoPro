@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { format } from "date-fns";
 import db from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { formatCurrency, PAYMENT_METHODS } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
@@ -38,35 +39,53 @@ export default function PaymentDialog({ customer, onClose, onSuccess }) {
       ? `Pagamento dividido: ${formatCurrency(parseFloat(amount1) || 0)} (${PAYMENT_METHODS.find(m => m.value === method1)?.label}) + ${formatCurrency(parseFloat(amount2) || 0)} (${PAYMENT_METHODS.find(m => m.value === method2)?.label})`
       : `Pagamento via ${PAYMENT_METHODS.find(m => m.value === method1)?.label}`;
 
-    await db.entities.Transaction.create({
-      customer_id: customer.id,
-      customer_name: customer.name,
-      type: "pagamento",
-      amount: total,
-      date: today,
-      time: now,
-      description: desc,
-    });
+    try {
+      await db.entities.Transaction.create({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: "pagamento",
+        amount: total,
+        date: today,
+        time: now,
+        description: desc,
+      });
 
-    const newBalance = totalDebito - total;
-    await db.entities.Customer.update(customer.id, { balance: newBalance });
+      const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+        p_customer_id: customer.id,
+        p_amount: total,
+        p_type: "pagamento",
+      });
 
-    if (customer.phone) {
-      let saldoMsg = "";
-      if (newBalance < 0) {
-        saldoMsg = `Você possui *${formatCurrency(Math.abs(newBalance))} de crédito* disponível para sua próxima compra!`;
-      } else if (newBalance === 0) {
-        saldoMsg = `Sua conta está *zerada*. Obrigado!`;
+      if (balanceError) {
+        console.error("Erro na RPC update_customer_balance:", balanceError);
+        const fallbackBalance = totalDebito - total;
+        await db.entities.Customer.update(customer.id, { balance: fallbackBalance });
+        var finalBalance = fallbackBalance;
       } else {
-        saldoMsg = `Saldo restante em aberto: *${formatCurrency(newBalance)}*.`;
+        var finalBalance = newBalance;
       }
-      const msg = `Olá ${customer.name}! Recebemos seu pagamento de *${formatCurrency(total)}*.\n\n${saldoMsg}\n\nObrigado!`;
-      sendWhatsApp(customer.phone, msg);
-    }
 
-    toast.success("Pagamento registrado!");
-    setLoading(false);
-    onSuccess();
+      if (customer.phone) {
+        let saldoMsg = "";
+        if (finalBalance < 0) {
+          saldoMsg = `Você possui *${formatCurrency(Math.abs(finalBalance))} de crédito* disponível para sua próxima compra!`;
+        } else if (finalBalance === 0) {
+          saldoMsg = `Sua conta está *zerada*. Obrigado!`;
+        } else {
+          saldoMsg = `Saldo restante em aberto: *${formatCurrency(finalBalance)}*.`;
+        }
+        const msg = `Olá ${customer.name}! Recebemos seu pagamento de *${formatCurrency(total)}*.\n\n${saldoMsg}\n\nObrigado!`;
+        sendWhatsApp(customer.phone, msg);
+      }
+
+      toast.success("Pagamento registrado!");
+      onSuccess();
+    } catch (error) {
+      console.error("Erro ao registrar pagamento:", error);
+      toast.error("Erro ao registrar pagamento: " + (error.message || "Tente novamente"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

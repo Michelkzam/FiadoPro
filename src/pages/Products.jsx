@@ -56,6 +56,9 @@ export default function Products() {
   const toggleAvailable = (product) => {
     db.entities.Product.update(product.id, { available: !product.available }).then(() => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+    }).catch((e) => {
+      console.error("Erro ao alternar disponibilidade:", e);
+      toast.error("Erro ao atualizar produto");
     });
   };
 

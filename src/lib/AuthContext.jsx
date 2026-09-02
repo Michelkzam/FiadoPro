@@ -61,11 +61,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
     setAuthChecked(false);
-    db.auth.logout();
+    try {
+      await db.auth.logout();
+    } catch (e) {
+      console.warn("Erro no logout:", e);
+    }
     if (shouldRedirect) {
       window.location.href = "/login";
     }

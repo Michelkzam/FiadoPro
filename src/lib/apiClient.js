@@ -139,6 +139,11 @@ export const createEntityService = (tableName) => ({
   },
 
   create: async (record) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error("[API] Create abortado: sessão não encontrada");
+      throw new ApiError("Sessão expirada. Faça login novamente.", 401);
+    }
     console.log("[API] Creating record in", tableName, ":", JSON.stringify(record, null, 2));
     const { data, error, status, statusText } = await supabase
       .from(tableName)

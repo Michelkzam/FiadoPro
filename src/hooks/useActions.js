@@ -7,7 +7,7 @@ import { sendWhatsApp } from "@/lib/sendWhatsApp";
 import { notifyPaymentReceived } from "@/lib/notify";
 
 const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_DELAY_MS = 100;
+const RETRY_DELAY_MS = 1000;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

@@ -17,6 +17,7 @@ export default function StoreProfilePage() {
   const fileRef = useRef();
   const [form, setForm] = useState(null);
   const initialized = useRef(false);
+  const [uploading, setUploading] = useState(false);
 
   const { data: profiles = [], isLoading } = useStoreProfile();
   const profile = profiles[0];
@@ -77,8 +78,6 @@ export default function StoreProfilePage() {
     }
     setUploading(false);
   };
-
-  const [uploading, setUploading] = useState(false);
 
   if (isLoading || !form) {
     return <LoadingSpinner />;

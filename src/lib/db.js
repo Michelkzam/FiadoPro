@@ -8,7 +8,6 @@ const db = {
     register: async (userData) => auth.register(userData),
     logout: async () => {
       await auth.logout();
-      window.location.href = '/login';
     },
     redirectToLogin: (returnUrl) => {
       const loginUrl = returnUrl ? `/login?return=${encodeURIComponent(returnUrl)}` : '/login';

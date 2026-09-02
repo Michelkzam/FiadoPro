@@ -36,13 +36,17 @@ export default function NewCustomer() {
   const create = useMutation({
     mutationFn: (data) => {
       const code = generateAccessCode();
+      const allowed = ["name", "cpf", "phone", "email", "cep", "address", "neighborhood", "city", "state"];
       const payload = {
-        ...data,
+        name: data.name || null,
         credit_limit: parseFloat(data.credit_limit) || 0,
         balance: 0,
         status: "ativo",
         access_code: code,
       };
+      allowed.forEach((k) => {
+        if (data[k] != null && data[k] !== "") payload[k] = data[k];
+      });
       return db.entities.Customer.create(payload)
         .then(async (created) => {
           if (!created) {
@@ -73,7 +77,11 @@ export default function NewCustomer() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    create.mutate(form);
+    const clean = { ...form };
+    Object.keys(clean).forEach((k) => {
+      if (clean[k] === "") clean[k] = null;
+    });
+    create.mutate(clean);
   };
 
   return (
@@ -89,7 +97,7 @@ export default function NewCustomer() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label>Nome Completo</Label>
-            <Input value={form.name} onChange={set("name")} placeholder="Nome do cliente" />
+            <Input value={form.name} onChange={set("name")} placeholder="Nome do cliente" required />
           </div>
 
           <div className="md:col-span-2">

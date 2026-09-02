@@ -31,13 +31,18 @@ export default function NewTransaction() {
     e.preventDefault();
     if (!amount || parseFloat(amount) <= 0) return;
 
-    const result = await registerTransaction({ type, amount, description });
-    if (result) {
-      sendTransactionWhatsApp(result, storeName);
-      toast.success(`${type === "compra" ? "Compra" : "Pagamento"} registrado!`);
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      navigate(`/clientes/${id}`);
+    try {
+      const result = await registerTransaction({ type, amount, description });
+      if (result) {
+        sendTransactionWhatsApp(result, storeName);
+        toast.success(`${type === "compra" ? "Compra" : "Pagamento"} registrado!`);
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        navigate(`/clientes/${id}`);
+      }
+    } catch (error) {
+      console.error("Erro ao registrar transação:", error);
+      toast.error("Erro ao registrar transação: " + (error.message || "Tente novamente"));
     }
   };
 

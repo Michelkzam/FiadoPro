@@ -31,7 +31,12 @@ export default function EditCustomer() {
 
   const update = useMutation({
     mutationFn: (data) => {
-      const payload = { ...data, credit_limit: parseFloat(data.credit_limit) || 0 };
+      const allowed = ["name", "cpf", "phone", "email", "cep", "address", "neighborhood", "city", "state"];
+      const payload = { credit_limit: parseFloat(data.credit_limit) || 0 };
+      allowed.forEach((k) => {
+        if (data[k] != null && data[k] !== "") payload[k] = data[k];
+      });
+      if (data.name) payload.name = data.name;
       return db.entities.Customer.update(id, payload);
     },
     onSuccess: () => {
@@ -52,7 +57,14 @@ export default function EditCustomer() {
         <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors"><ArrowLeft className="w-5 h-5" /></button>
         <h1 className="text-2xl font-bold text-foreground">Editar Cliente</h1>
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); update.mutate(form); }} className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        const clean = { ...form };
+        Object.keys(clean).forEach((k) => {
+          if (clean[k] === "") clean[k] = null;
+        });
+        update.mutate(clean);
+      }} className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2"><Label>Nome *</Label><Input value={form.name} onChange={set("name")} required /></div>
           <div><Label>CPF *</Label><Input value={form.cpf} onChange={set("cpf")} required /></div>

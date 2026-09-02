@@ -107,8 +107,9 @@ export default function CustomerDetail() {
                     const novoLimite = prompt("Novo limite de crédito (R$):", customer.credit_limit);
                     if (novoLimite && parseFloat(novoLimite) > 0) {
                       await db.entities.Customer.update(customer.id, { credit_limit: parseFloat(novoLimite) });
+                      queryClient.invalidateQueries({ queryKey: ["customer", id] });
+                      queryClient.invalidateQueries({ queryKey: ["customers"] });
                       toast.success("Limite atualizado! Cliente pode fazer novas compras.");
-                      window.location.reload();
                     }
                   }}
                 >
