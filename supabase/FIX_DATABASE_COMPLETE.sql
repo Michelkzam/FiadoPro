@@ -436,6 +436,7 @@ CREATE POLICY "authenticated_access" ON campanha_analytics FOR ALL USING (auth.u
 -- =============================================
 -- 6. RPC: update_customer_balance
 -- =============================================
+DROP FUNCTION IF EXISTS update_customer_balance(UUID, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION update_customer_balance(
   p_customer_id UUID,
   p_amount NUMERIC,
@@ -464,6 +465,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================
 -- 7. RPC: portal_login
 -- =============================================
+DROP FUNCTION IF EXISTS portal_login(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION portal_login(p_cpf TEXT, p_access_code TEXT)
 RETURNS JSON AS $$
 DECLARE
@@ -492,6 +494,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================
 -- 8. RPC: portal_get_customer
 -- =============================================
+DROP FUNCTION IF EXISTS portal_get_customer(UUID);
 CREATE OR REPLACE FUNCTION portal_get_customer(p_customer_id UUID)
 RETURNS SETOF customers AS $$
   SELECT * FROM customers c WHERE c.id = p_customer_id AND c.status = 'ativo';
@@ -500,6 +503,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- =============================================
 -- 9. RPC: portal_get_transactions
 -- =============================================
+DROP FUNCTION IF EXISTS portal_get_transactions(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION portal_get_transactions(p_customer_id UUID, p_limit INTEGER DEFAULT 200)
 RETURNS SETOF transactions AS $$
   SELECT * FROM transactions t
@@ -511,6 +515,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- =============================================
 -- 10. RPC: portal_get_orders
 -- =============================================
+DROP FUNCTION IF EXISTS portal_get_orders(UUID, INTEGER);
 CREATE OR REPLACE FUNCTION portal_get_orders(p_customer_id UUID, p_limit INTEGER DEFAULT 50)
 RETURNS SETOF orders AS $$
   SELECT * FROM orders o
@@ -522,6 +527,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- =============================================
 -- 11. RPC: portal_get_products
 -- =============================================
+DROP FUNCTION IF EXISTS portal_get_products(INTEGER);
 CREATE OR REPLACE FUNCTION portal_get_products(p_limit INTEGER DEFAULT 200)
 RETURNS SETOF products AS $$
   SELECT * FROM products p
@@ -533,6 +539,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- =============================================
 -- 12. RPC: portal_get_store_profile
 -- =============================================
+DROP FUNCTION IF EXISTS portal_get_store_profile();
 CREATE OR REPLACE FUNCTION portal_get_store_profile()
 RETURNS SETOF store_profiles AS $$
   SELECT * FROM store_profiles LIMIT 1;
@@ -541,6 +548,7 @@ $$ LANGUAGE sql SECURITY DEFINER;
 -- =============================================
 -- 13. RPC: portal_create_order
 -- =============================================
+DROP FUNCTION IF EXISTS portal_create_order(UUID, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION portal_create_order(
   p_customer_id UUID,
   p_description TEXT,
@@ -565,6 +573,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================
 -- 14. RPC: portal_create_transaction
 -- =============================================
+DROP FUNCTION IF EXISTS portal_create_transaction(UUID, TEXT, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION portal_create_transaction(
   p_customer_id UUID,
   p_type TEXT,
@@ -597,6 +606,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =============================================
 -- 15. RPC: portal_update_balance
 -- =============================================
+DROP FUNCTION IF EXISTS portal_update_balance(UUID, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION portal_update_balance(
   p_customer_id UUID,
   p_amount NUMERIC,
@@ -617,9 +627,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =============================================
 -- 16. RPCs de Dashboard/Relatórios
+-- (DROP antes de CREATE por causa de conflito de tipos)
 -- =============================================
 
 -- get_cashflow
+DROP FUNCTION IF EXISTS get_cashflow(INTEGER);
 CREATE OR REPLACE FUNCTION get_cashflow(p_days INTEGER DEFAULT 30)
 RETURNS TABLE(periodo TEXT, entradas NUMERIC, saidas NUMERIC) AS $$
   SELECT
@@ -633,6 +645,7 @@ RETURNS TABLE(periodo TEXT, entradas NUMERIC, saidas NUMERIC) AS $$
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- get_customer_ranking
+DROP FUNCTION IF EXISTS get_customer_ranking(INTEGER);
 CREATE OR REPLACE FUNCTION get_customer_ranking(p_limit INTEGER DEFAULT 10)
 RETURNS TABLE(id UUID, name TEXT, balance NUMERIC, total_transacoes BIGINT) AS $$
   SELECT c.id, c.name, c.balance, COUNT(t.id) AS total_transacoes
@@ -645,6 +658,7 @@ RETURNS TABLE(id UUID, name TEXT, balance NUMERIC, total_transacoes BIGINT) AS $
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- get_product_ranking
+DROP FUNCTION IF EXISTS get_product_ranking(INTEGER);
 CREATE OR REPLACE FUNCTION get_product_ranking(p_limit INTEGER DEFAULT 10)
 RETURNS TABLE(id UUID, name TEXT, category TEXT, total_vendas BIGINT) AS $$
   SELECT p.id, p.name, p.category, 0::BIGINT AS total_vendas
@@ -655,6 +669,7 @@ RETURNS TABLE(id UUID, name TEXT, category TEXT, total_vendas BIGINT) AS $$
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- get_delinquent_customers
+DROP FUNCTION IF EXISTS get_delinquent_customers(INTEGER);
 CREATE OR REPLACE FUNCTION get_delinquent_customers(p_min_days INTEGER DEFAULT 30)
 RETURNS TABLE(id UUID, name TEXT, phone TEXT, balance NUMERIC, dias_em_aberto INTEGER) AS $$
   SELECT c.id, c.name, c.phone, c.balance,
