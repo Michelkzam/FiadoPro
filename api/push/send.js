@@ -1,22 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
-import webPush from "web-push";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const vapidPublicKey = process.env.VITE_VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidEmail = process.env.VAPID_EMAIL || "mailto:michel@kzan.com.br";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// Configure web-push with VAPID keys
-if (vapidPublicKey && vapidPrivateKey) {
-  webPush.setVapidDetails(
-    vapidEmail,
-    vapidPublicKey,
-    vapidPrivateKey
-  );
-}
 
 const verifyAuth = async (req) => {
   const authHeader = req.headers.authorization;
@@ -31,18 +18,15 @@ const verifyAuth = async (req) => {
   return user;
 };
 
-const sendPushNotification = async (subscription, payload) => {
-  const { endpoint, p256dh, auth } = subscription;
-  
-  const pushSubscription = {
-    endpoint,
-    keys: { p256dh, auth }
-  };
-
-  return webPush.sendNotification(pushSubscription, JSON.stringify(payload));
-};
-
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -50,6 +34,9 @@ export default async function handler(req, res) {
   if (!supabaseUrl || !supabaseServiceKey) {
     return res.status(500).json({ error: "SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios" });
   }
+
+  const vapidPublicKey = process.env.VITE_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
   if (!vapidPublicKey || !vapidPrivateKey) {
     return res.status(500).json({ error: "VAPID keys não configuradas" });
@@ -67,7 +54,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Título e corpo são obrigatórios" });
     }
 
-    // Get subscriptions
     let query = supabase
       .from("push_subscriptions")
       .select("*");
@@ -85,33 +71,47 @@ export default async function handler(req, res) {
     if (!subscriptions || subscriptions.length === 0) {
       return res.status(200).json({ 
         success: true, 
-        message: "Nenhuma inscrição encontrada",
+        message: "Nenhuma inscrição push encontrada",
         sent: 0,
         failed: 0
       });
     }
 
-    const payload = {
+    const webPush = (await import("web-push")).default;
+
+    webPush.setVapidDetails(
+      process.env.VAPID_EMAIL || "mailto:michel@kzan.com.br",
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const pushPayload = JSON.stringify({
       title,
       body,
       url: url || "/",
       tag: tag || "notification",
       icon: "/icon-192x192.png",
       badge: "/badge-72x72.png"
-    };
+    });
 
     let sent = 0;
     let failed = 0;
-    const errors = [];
 
     for (const subscription of subscriptions) {
       try {
-        await sendPushNotification(subscription, payload);
+        const pushSubscription = {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth
+          }
+        };
+
+        await webPush.sendNotification(pushSubscription, pushPayload);
         sent++;
       } catch (error) {
-        console.error(`Push failed for ${subscription.endpoint}:`, error.message);
+        console.error(`Push failed: ${error.message}`);
         
-        // Remove invalid subscriptions (404 = subscription expired)
         if (error.statusCode === 404 || error.statusCode === 410) {
           await supabase
             .from("push_subscriptions")
@@ -120,11 +120,9 @@ export default async function handler(req, res) {
         }
         
         failed++;
-        errors.push({ endpoint: subscription.endpoint, error: error.message });
       }
     }
 
-    // Log notification in database
     await supabase.from("notifications").insert({
       user_id: user_id || user.id,
       title,
