@@ -37,6 +37,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Garantir que triggers existam (idempotente)
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_store_profiles_updated_at ON store_profiles;
+CREATE TRIGGER update_store_profiles_updated_at BEFORE UPDATE ON store_profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- =============================================
 -- P0-4: Criar RPC atômica para registrar transação completa
 -- =============================================
@@ -182,6 +199,11 @@ CREATE POLICY "Allow all for authenticated users" ON coupons FOR ALL USING (true
 CREATE POLICY "Allow all for authenticated users" ON cashback_rules FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON cashback_balance FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON cashback_transactions FOR ALL USING (true);
+
+-- Garantir trigger de comandas
+DROP TRIGGER IF EXISTS update_comandas_updated_at ON comandas;
+CREATE TRIGGER update_comandas_updated_at BEFORE UPDATE ON comandas
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Índices para novas tabelas
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
