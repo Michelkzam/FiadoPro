@@ -1,11 +1,21 @@
 import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, BarChart3, CheckCircle, XCircle, Loader2, Phone, Zap, Settings } from "lucide-react";
+
+const BAILEYS_SERVER_KEY = "fiadopro_wa_server_url";
+
+function getServerUrl() {
+  return localStorage.getItem(BAILEYS_SERVER_KEY) || "";
+}
+
+function setServerUrl(url) {
+  localStorage.setItem(BAILEYS_SERVER_KEY, url);
+}
 
 function StatusBadge({ status }) {
   const config = {
@@ -59,57 +69,46 @@ function QRCodeDisplay({ qrCode, onRefresh, isConnecting }) {
   );
 }
 
-function ConnectionConfig({ onSave, onClose }) {
-  const [form, setForm] = useState({
-    api_url: "https://api.evolutionapi.com.br",
-    api_key: "",
-    instance_id: "fiadopro",
-  });
+function ServerConfig({ onSave, onClose }) {
+  const [serverUrl, setUrl] = useState(getServerUrl());
   
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-xs text-blue-700">
-          Use o Evolution API (gratis) para conectar o WhatsApp via Baileys.
-          <br />
-          Acesse: <a href="https://evolution-api.com" target="_blank" rel="noopener noreferrer" className="underline">evolution-api.com</a>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <p className="text-xs text-green-700 font-medium mb-1">100% Gratuito</p>
+        <p className="text-xs text-green-600">
+          O servidor Baileys roda no Railway (free tier). Nao ha custos por mensagem.
         </p>
       </div>
       
       <div>
-        <Label>URL da API</Label>
+        <Label>URL do Servidor Baileys</Label>
         <Input
-          value={form.api_url}
-          onChange={(e) => setForm({ ...form, api_url: e.target.value })}
-          placeholder="https://api.evolutionapi.com.br"
+          value={serverUrl}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://seu-app.up.railway.app"
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          URL do servidor deployado no Railway
+        </p>
       </div>
       
-      <div>
-        <Label>API Key</Label>
-        <Input
-          type="password"
-          value={form.api_key}
-          onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-          placeholder="Sua API Key do Evolution"
-        />
-      </div>
-      
-      <div>
-        <Label>Nome da Instancia</Label>
-        <Input
-          value={form.instance_id}
-          onChange={(e) => setForm({ ...form, instance_id: e.target.value })}
-          placeholder="fiadopro"
-        />
+      <div className="bg-muted rounded-lg p-3">
+        <p className="text-xs font-medium text-foreground mb-2">Como obter a URL:</p>
+        <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+          <li>Acesse railway.app</li>
+          <li>Deploy o projeto da pasta `server/`</li>
+          <li>Copie a URL gerada</li>
+          <li>Cole aqui em cima</li>
+        </ol>
       </div>
       
       <div className="flex gap-2">
         <Button onClick={onClose} variant="outline" className="flex-1">
           Cancelar
         </Button>
-        <Button onClick={() => onSave(form)} className="flex-1 gap-2">
-          <Settings className="w-4 h-4" /> Conectar
+        <Button onClick={() => onSave(serverUrl)} className="flex-1 gap-2" disabled={!serverUrl}>
+          <Settings className="w-4 h-4" /> Salvar
         </Button>
       </div>
     </div>
@@ -137,14 +136,23 @@ export default function WhatsAppConnectionPanel() {
   const [showConfig, setShowConfig] = useState(false);
   const [showStats, setShowStats] = useState(false);
   
-  const { data: waStatus, isLoading } = useQuery({
-    queryKey: ["wa_status"],
+  const serverUrl = getServerUrl();
+  
+  const { data: waStatus, isLoading, error } = useQuery({
+    queryKey: ["wa_status", serverUrl],
     queryFn: async () => {
-      const res = await fetch("/api/whatsapp/connect");
-      const data = await res.json();
-      return data;
+      if (!serverUrl) return { status: "desconectado", qr_code: null };
+      
+      try {
+        const res = await fetch(`${serverUrl}/status`);
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        return { status: "erro", qr_code: null, error: "Servidor indisponivel" };
+      }
     },
-    refetchInterval: 3000,
+    refetchInterval: serverUrl ? 3000 : false,
+    enabled: !!serverUrl,
   });
   
   const { data: stats } = useQuery({
@@ -155,57 +163,25 @@ export default function WhatsAppConnectionPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "get_stats" }),
       });
-      const data = await res.json();
-      return data;
+      return res.json();
     },
     refetchInterval: 30000,
   });
   
-  const connectMutation = useMutation({
-    mutationFn: async (config) => {
-      const res = await fetch("/api/whatsapp/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "connect", ...config }),
-      });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["wa_status"] });
-      if (data.ok) {
-        toast.success("Conexao iniciada!");
-        setShowConfig(false);
-      } else {
-        toast.error(data.error || "Erro ao conectar");
-      }
-    },
-  });
+  const handleSaveServer = useCallback((url) => {
+    setServerUrl(url);
+    setShowConfig(false);
+    queryClient.invalidateQueries({ queryKey: ["wa_status"] });
+    toast.success("Servidor configurado!");
+  }, [queryClient]);
   
-  const toggleMutation = useMutation({
-    mutationFn: async (action) => {
-      const res = await fetch("/api/whatsapp/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wa_status"] });
-    },
-  });
-  
-  const handleConnect = useCallback((config) => {
-    connectMutation.mutate(config);
-  }, [connectMutation]);
-  
-  const handleToggleRobot = useCallback(() => {
-    toggleMutation.mutate("toggle_robot");
-  }, [toggleMutation]);
-  
-  const handleToggleHuman = useCallback(() => {
-    toggleMutation.mutate("toggle_human");
-  }, [toggleMutation]);
+  const handleRefreshQR = useCallback(async () => {
+    if (!serverUrl) {
+      toast.error("Configure o servidor primeiro");
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["wa_status"] });
+  }, [serverUrl, queryClient]);
   
   if (isLoading) {
     return (
@@ -232,6 +208,25 @@ export default function WhatsAppConnectionPanel() {
         </div>
       </div>
       
+      {!serverUrl && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+              <Settings className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-800">Servidor nao configurado</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                Para usar o WhatsApp, voce precisa deployar o servidor Baileys no Railway (gratis) e configurar a URL aqui.
+              </p>
+              <Button onClick={() => setShowConfig(true)} size="sm" className="mt-3 gap-2">
+                <Settings className="w-4 h-4" /> Configurar Servidor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -253,11 +248,6 @@ export default function WhatsAppConnectionPanel() {
                   {waStatus.phone_number}
                 </p>
               )}
-              {waStatus?.connected_at && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Conectado desde: {new Date(waStatus.connected_at).toLocaleString("pt-BR")}
-                </p>
-              )}
             </div>
           </div>
           
@@ -265,17 +255,25 @@ export default function WhatsAppConnectionPanel() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
               <Zap className="w-3 h-3" /> 100% Gratuito
             </span>
-            {status === "desconectado" && (
-              <Button onClick={() => setShowConfig(true)} className="gap-2">
-                <QrCode className="w-4 h-4" /> Conectar WhatsApp
+            {serverUrl && (
+              <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="gap-2">
+                <Settings className="w-4 h-4" />
               </Button>
             )}
           </div>
         </div>
         
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-xs text-red-700">
+              Erro ao conectar com o servidor. Verifique a URL e tente novamente.
+            </p>
+          </div>
+        )}
+        
         {status === "aguardando_qr" && (
           <div className="border-t border-border pt-4">
-            <QRCodeDisplay qrCode={qrCode} onRefresh={() => connectMutation.mutate({ action: "connect" })} isConnecting={connectMutation.isPending} />
+            <QRCodeDisplay qrCode={qrCode} onRefresh={handleRefreshQR} isConnecting={false} />
           </div>
         )}
         
@@ -288,6 +286,14 @@ export default function WhatsAppConnectionPanel() {
           </div>
         )}
         
+        {status === "desconectado" && serverUrl && (
+          <div className="border-t border-border pt-4">
+            <Button onClick={handleRefreshQR} className="gap-2">
+              <QrCode className="w-4 h-4" /> Conectar WhatsApp
+            </Button>
+          </div>
+        )}
+        
         <div className="border-t border-border pt-4 mt-4">
           <div className="flex items-center gap-4">
             <div className="flex-1">
@@ -296,15 +302,12 @@ export default function WhatsAppConnectionPanel() {
                   <Bot className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">Robot Automatico</span>
                 </div>
-                <button
-                  onClick={handleToggleRobot}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${waStatus?.robot_active ? "bg-green-500" : "bg-gray-300"}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${waStatus?.robot_active ? "translate-x-5" : ""}`} />
-                </button>
+                <div className={`w-11 h-6 rounded-full ${waStatus?.robot_active ? "bg-green-500" : "bg-gray-300"}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${waStatus?.robot_active ? "translate-x-5 ml-0.5" : "ml-0.5"}`} />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                {waStatus?.robot_active ? "Bot respondendo automaticamente" : "Bot pausado - mensagens nao respondidas"}
+                {waStatus?.robot_active !== false ? "Bot respondendo automaticamente" : "Bot pausado"}
               </p>
             </div>
             
@@ -314,16 +317,53 @@ export default function WhatsAppConnectionPanel() {
                   <User className="w-4 h-4 text-amber-500" />
                   <span className="text-sm font-medium text-foreground">Atendimento Humano</span>
                 </div>
-                <button
-                  onClick={handleToggleHuman}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${waStatus?.human_mode ? "bg-amber-500" : "bg-gray-300"}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${waStatus?.human_mode ? "translate-x-5" : ""}`} />
-                </button>
+                <div className={`w-11 h-6 rounded-full ${waStatus?.human_mode ? "bg-amber-500" : "bg-gray-300"}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${waStatus?.human_mode ? "translate-x-5 ml-0.5" : "ml-0.5"}`} />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                {waStatus?.human_mode ? "Modo manual - todas as conversas vao para a fila" : "Bot decide quando transferir"}
+                {waStatus?.human_mode ? "Modo manual ativo" : "Bot decide quando transferir"}
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard icon={BarChart3} label="Conversas Hoje" value={stats?.total_conversas || 0} color="primary" />
+        <StatsCard icon={Bot} label="Resolvidas pelo Bot" value={stats?.resolvidas_bot || 0} color="green" />
+        <StatsCard icon={User} label="Transbordos" value={stats?.transbordo_humano || 0} color="amber" />
+        <StatsCard icon={BarChart3} label="Mensagens" value={stats?.mensagens_enviadas || 0} color="blue" />
+      </div>
+      
+      <div className="bg-card rounded-xl border border-border p-6">
+        <h3 className="font-semibold text-foreground mb-4">Como Funciona</h3>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-blue-600">1</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Deploy o servidor Baileys</p>
+              <p className="text-xs text-muted-foreground">No Railway (gratis) - 500h/mes</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-blue-600">2</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Configure a URL</p>
+              <p className="text-xs text-muted-foreground">Cole a URL do servidor aqui</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-blue-600">3</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Escaneie o QR Code</p>
+              <p className="text-xs text-muted-foreground">WhatsApp conectado para sempre</p>
             </div>
           </div>
         </div>
@@ -333,10 +373,10 @@ export default function WhatsAppConnectionPanel() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" /> Configurar WhatsApp
+              <Settings className="w-5 h-5" /> Configurar Servidor
             </DialogTitle>
           </DialogHeader>
-          <ConnectionConfig onSave={handleConnect} onClose={() => setShowConfig(false)} />
+          <ServerConfig onSave={handleSaveServer} onClose={() => setShowConfig(false)} />
         </DialogContent>
       </Dialog>
       
@@ -365,10 +405,6 @@ export default function WhatsAppConnectionPanel() {
                 <p className="text-2xl font-bold text-blue-600">{stats?.mensagens_recebidas || 0}</p>
                 <p className="text-xs text-muted-foreground">Mensagens Recebidas</p>
               </div>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-foreground">{stats?.mensagens_enviadas || 0}</p>
-              <p className="text-xs text-muted-foreground">Mensagens Enviadas pelo Bot</p>
             </div>
           </div>
         </DialogContent>
