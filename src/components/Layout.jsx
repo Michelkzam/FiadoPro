@@ -7,36 +7,70 @@ import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
 import { STORE_NAME_FALLBACK } from "@/lib/constants";
 import NotificationBell from "@/components/NotificationBell";
 
+const COLORS = {
+  blue: { icon: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
+  teal: { icon: "#14b8a6", bg: "#f0fdfa", border: "#99f6e4" },
+  amber: { icon: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
+  purple: { icon: "#a855f7", bg: "#faf5ff", border: "#e9d5ff" },
+  orange: { icon: "#f97316", bg: "#fff7ed", border: "#fed7aa" },
+  green: { icon: "#22c55e", bg: "#f0fdf4", border: "#bbf7d0" },
+  slate: { icon: "#64748b", bg: "#f8fafc", border: "#e2e8f0" },
+  indigo: { icon: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" },
+  cyan: { icon: "#06b6d4", bg: "#ecfeff", border: "#a5f3fc" },
+  emerald: { icon: "#10b981", bg: "#ecfdf5", border: "#a7f3d0" },
+  gray: { icon: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" },
+  red: { icon: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
+  pink: { icon: "#ec4899", bg: "#fdf2f8", border: "#fbcfe8" },
+  rose: { icon: "#f43f5e", bg: "#fff1f2", border: "#fecdd3" },
+  violet: { icon: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
+  lime: { icon: "#84cc16", bg: "#f7fee7", border: "#d9f99d" },
+};
+
 const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
-  { path: "/mesas", label: "Mesas", icon: Table, color: "text-teal-500", bg: "bg-teal-50" },
-  { path: "/fila-espera", label: "Fila de Espera", icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
-  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send, color: "text-purple-500", bg: "bg-purple-50" },
-  { path: "/pedidos", label: "Pedidos", icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-50" },
-  { path: "/compras", label: "Vendas", icon: ShoppingCart, color: "text-green-500", bg: "bg-green-50" },
-  { path: "/historico", label: "Histórico", icon: History, color: "text-slate-500", bg: "bg-slate-50" },
-  { path: "/relatorios", label: "Relatórios", icon: FileText, color: "text-indigo-500", bg: "bg-indigo-50" },
-  { path: "/cadastros", label: "Cadastros", icon: Package, color: "text-cyan-500", bg: "bg-cyan-50" },
-  { path: "/whatsapp-ai", label: "WhatsApp AI", icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-50" },
-  { path: "/configuracoes", label: "Configurações", icon: Settings, color: "text-gray-500", bg: "bg-gray-50" },
+  { path: "/", label: "Dashboard", icon: LayoutDashboard, colorKey: "blue" },
+  { path: "/mesas", label: "Mesas", icon: Table, colorKey: "teal" },
+  { path: "/fila-espera", label: "Fila de Espera", icon: Clock, colorKey: "amber" },
+  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send, colorKey: "purple" },
+  { path: "/pedidos", label: "Pedidos", icon: ClipboardList, colorKey: "orange" },
+  { path: "/compras", label: "Vendas", icon: ShoppingCart, colorKey: "green" },
+  { path: "/historico", label: "Histórico", icon: History, colorKey: "slate" },
+  { path: "/relatorios", label: "Relatórios", icon: FileText, colorKey: "indigo" },
+  { path: "/cadastros", label: "Cadastros", icon: Package, colorKey: "cyan" },
+  { path: "/whatsapp-ai", label: "WhatsApp AI", icon: MessageSquare, colorKey: "emerald" },
+  { path: "/configuracoes", label: "Configurações", icon: Settings, colorKey: "gray" },
 ];
 
 function NavItem({ item, isActive, badge, onClick }) {
   const Icon = item.icon;
+  const colors = COLORS[item.colorKey] || COLORS.gray;
+  
   return (
     <Link
       to={item.path}
       onClick={onClick}
-      className={`sidebar-item ${
-        isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : `text-foreground hover:bg-muted ${item.bg || ""}`
-      }`}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+      style={{
+        backgroundColor: isActive ? "#2563eb" : "transparent",
+        color: isActive ? "#ffffff" : "#1e293b",
+      }}
     >
-      <Icon className={`w-4 h-4 ${isActive ? "text-primary-foreground" : item.color || ""}`} />
+      <div
+        className="w-7 h-7 rounded-md flex items-center justify-center"
+        style={{
+          backgroundColor: isActive ? "rgba(255,255,255,0.2)" : colors.bg,
+        }}
+      >
+        <Icon
+          className="w-4 h-4"
+          style={{ color: isActive ? "#ffffff" : colors.icon }}
+        />
+      </div>
       {item.label}
       {badge > 0 && (
-        <span className="ml-auto bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full">
+        <span
+          className="ml-auto text-xs px-2 py-0.5 rounded-full font-medium"
+          style={{ backgroundColor: COLORS.amber.bg, color: COLORS.amber.icon }}
+        >
           {badge}
         </span>
       )}
@@ -65,8 +99,6 @@ export default function Layout() {
 
   const { data: pendingOrders = [] } = usePendingOrders();
 
-  const isSettingsPage = location.pathname === "/configuracoes";
-
   const renderNav = (onClickLink) =>
     navItems.map((item) => (
       <NavItem
@@ -81,7 +113,10 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background font-inter">
       {/* Mobile header */}
-      <header className="lg:hidden bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+      <header
+        className="lg:hidden px-4 py-3 flex items-center justify-between sticky top-0 z-30"
+        style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" }}
+      >
         <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 hover:bg-muted rounded-lg">
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -98,7 +133,10 @@ export default function Layout() {
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMenuOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-72 bg-card border-r border-border shadow-xl p-4 space-y-2">
+          <div
+            className="absolute left-0 top-0 h-full w-72 shadow-xl p-4 space-y-2"
+            style={{ backgroundColor: "#ffffff", borderRight: "1px solid #e2e8f0" }}
+          >
             <div className="flex items-center justify-between mb-4">
               <span className="font-bold text-foreground">{storeProfile?.store_name || STORE_NAME_FALLBACK}</span>
               <button onClick={() => setMenuOpen(false)} className="p-1.5 hover:bg-muted rounded-lg">
@@ -108,7 +146,8 @@ export default function Layout() {
             {renderNav(() => setMenuOpen(false))}
             <button
               onClick={() => { logout(); setMenuOpen(false); }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 w-full mt-4"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full mt-4"
+              style={{ color: "#ef4444" }}
             >
               <LogOut className="w-4 h-4" /> Sair
             </button>
@@ -118,16 +157,18 @@ export default function Layout() {
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border min-h-screen sticky top-0 h-screen">
-          <div className="p-4 border-b border-border">
+        <aside
+          className="hidden lg:flex flex-col w-64 min-h-screen sticky top-0 h-screen"
+          style={{ backgroundColor: "#ffffff", borderRight: "1px solid #e2e8f0" }}
+        >
+          <div className="p-4" style={{ borderBottom: "1px solid #e2e8f0" }}>
             <div className="flex items-center gap-3">
-              {storeProfile?.logo_url ? (
-                <img src={storeProfile.logo_url} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
-              ) : (
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                  <Store className="w-5 h-5 text-primary-foreground" />
-                </div>
-              )}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: "#2563eb" }}
+              >
+                <Store className="w-5 h-5 text-white" />
+              </div>
               <div>
                 <p className="font-semibold text-foreground text-sm">{storeProfile?.store_name || STORE_NAME_FALLBACK}</p>
                 <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
@@ -139,7 +180,7 @@ export default function Layout() {
             {renderNav()}
           </nav>
 
-          <div className="p-3 border-t border-border space-y-2">
+          <div className="p-3 space-y-2" style={{ borderTop: "1px solid #e2e8f0" }}>
             <div className="flex items-center justify-between px-3 py-1">
               <span className="text-xs text-muted-foreground font-medium">Notificações</span>
               <NotificationBell />
@@ -153,7 +194,8 @@ export default function Layout() {
             </button>
             <button
               onClick={() => logout()}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 w-full"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full"
+              style={{ color: "#ef4444" }}
             >
               <LogOut className="w-4 h-4" /> Sair
             </button>
@@ -161,7 +203,7 @@ export default function Layout() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full" style={{ backgroundColor: "#f8fafc" }}>
           <Outlet />
         </main>
       </div>

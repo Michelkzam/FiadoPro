@@ -5,34 +5,63 @@ import { useCashflow, useDelinquentCustomers, useMonthlyComparison } from "@/hoo
 import { formatCurrency } from "@/lib/constants";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const CHART_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
-function StatCard({ icon: Icon, title, value, subtitle, link, color = "primary", gradient }) {
+const COLORS = {
+  red: { icon: "#ef4444", bg: "#fef2f2", gradient: "linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)" },
+  blue: { icon: "#3b82f6", bg: "#eff6ff", gradient: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" },
+  green: { icon: "#22c55e", bg: "#f0fdf4", gradient: "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)" },
+  purple: { icon: "#a855f7", bg: "#faf5ff", gradient: "linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%)" },
+  orange: { icon: "#f97316", bg: "#fff7ed", gradient: "linear-gradient(135deg, #f97316 0%, #f59e0b 100%)" },
+  teal: { icon: "#14b8a6", bg: "#f0fdfa", gradient: "linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)" },
+  amber: { icon: "#f59e0b", bg: "#fffbeb", gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" },
+  pink: { icon: "#ec4899", bg: "#fdf2f8", gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)" },
+  slate: { icon: "#64748b", bg: "#f8fafc", gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)" },
+  indigo: { icon: "#6366f1", bg: "#eef2ff", gradient: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" },
+  cyan: { icon: "#06b6d4", bg: "#ecfeff", gradient: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)" },
+  emerald: { icon: "#10b981", bg: "#ecfdf5", gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
+};
+
+function StatCard({ icon: Icon, title, value, subtitle, link, colorKey = "blue" }) {
+  const colors = COLORS[colorKey] || COLORS.blue;
+  
   return (
     <Link to={link} className="block">
-      <div className={`rounded-xl border border-border p-5 hover:shadow-md transition-all duration-200 group ${gradient || "bg-card"}`}>
+      <div
+        className="rounded-xl p-5 hover:shadow-lg transition-all duration-200 group"
+        style={{ background: colors.gradient }}
+      >
         <div className="flex items-center justify-between mb-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${gradient ? "bg-white/20" : `bg-${color}/10`}`}>
-            <Icon className={`w-5 h-5 ${gradient ? "text-white" : `text-${color}`}`} />
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+          >
+            <Icon className="w-5 h-5" style={{ color: "#ffffff" }} />
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "rgba(255,255,255,0.7)" }} />
         </div>
-        <p className={`text-2xl font-bold ${gradient ? "text-white" : "text-foreground"}`}>{value}</p>
-        <p className={`text-sm mt-1 ${gradient ? "text-white/80" : "text-muted-foreground"}`}>{title}</p>
-        {subtitle && <p className={`text-xs mt-1 ${gradient ? "text-white/70" : "text-muted-foreground"}`}>{subtitle}</p>}
+        <p className="text-2xl font-bold" style={{ color: "#ffffff" }}>{value}</p>
+        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.85)" }}>{title}</p>
+        {subtitle && <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.7)" }}>{subtitle}</p>}
       </div>
     </Link>
   );
 }
 
-function QuickAction({ icon: Icon, label, link, color, bg }) {
+function QuickAction({ icon: Icon, label, link, colorKey }) {
+  const colors = COLORS[colorKey] || COLORS.blue;
+  
   return (
     <Link
       to={link}
-      className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-all duration-200 hover:shadow-sm"
+      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:shadow-md"
+      style={{ backgroundColor: colors.bg, border: `1px solid ${colors.icon}20` }}
     >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bg || `bg-${color}/10`}`}>
-        <Icon className={`w-5 h-5 text-${color}`} />
+      <div
+        className="w-10 h-10 rounded-lg flex items-center justify-center"
+        style={{ backgroundColor: `${colors.icon}15` }}
+      >
+        <Icon className="w-5 h-5" style={{ color: colors.icon }} />
       </div>
       <span className="text-sm font-medium text-foreground">{label}</span>
     </Link>
@@ -77,10 +106,10 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={DollarSign} title="Total em Débito" value={formatCurrency(totalDebt)} link="/relatorios" color="red" gradient="bg-gradient-to-br from-red-500 to-rose-600" />
-        <StatCard icon={TrendingUp} title="Vendas do Mês" value={formatCurrency(monthPurchases)} subtitle={`${purchaseChange >= 0 ? "+" : ""}${purchaseChange.toFixed(1)}% vs mês anterior`} link="/relatorios" color="primary" gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
-        <StatCard icon={DollarSign} title="Recebido no Mês" value={formatCurrency(monthPayments)} link="/relatorios" color="green" gradient="bg-gradient-to-br from-emerald-500 to-teal-600" />
-        <StatCard icon={Users} title="Clientes Ativos" value={customers.filter((c) => c.status === "ativo").length} link="/clientes" color="purple" gradient="bg-gradient-to-br from-purple-500 to-violet-600" />
+        <StatCard icon={DollarSign} title="Total em Débito" value={formatCurrency(totalDebt)} link="/relatorios" colorKey="red" />
+        <StatCard icon={TrendingUp} title="Vendas do Mês" value={formatCurrency(monthPurchases)} subtitle={`${purchaseChange >= 0 ? "+" : ""}${purchaseChange.toFixed(1)}% vs mês anterior`} link="/relatorios" colorKey="blue" />
+        <StatCard icon={DollarSign} title="Recebido no Mês" value={formatCurrency(monthPayments)} link="/relatorios" colorKey="green" />
+        <StatCard icon={Users} title="Clientes Ativos" value={customers.filter((c) => c.status === "ativo").length} link="/clientes" colorKey="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -92,13 +121,13 @@ export default function Home() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Vendas</span>
-              <span className="text-sm font-bold text-red-600">{formatCurrency(todaySales)}</span>
+              <span className="text-sm font-bold" style={{ color: "#ef4444" }}>{formatCurrency(todaySales)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Recebimentos</span>
-              <span className="text-sm font-bold text-green-600">{formatCurrency(todayPayments)}</span>
+              <span className="text-sm font-bold" style={{ color: "#22c55e" }}>{formatCurrency(todayPayments)}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-border pt-2">
+            <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid #e2e8f0" }}>
               <span className="text-sm font-medium text-foreground">Líquido</span>
               <span className="text-sm font-bold text-foreground">{formatCurrency(todayPayments - todaySales)}</span>
             </div>
@@ -110,9 +139,9 @@ export default function Home() {
           {txByType.length > 0 ? (
             <ResponsiveContainer width="100%" height={120}>
               <PieChart>
-                <Pie data={txByType} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={3} dataKey="value">
-                  {txByType.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i]} />
+                <Pie data={txByType} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
+                  {txByType.map((_, index) => (
+                    <Cell key={index} fill={CHART_COLORS[index]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(v) => formatCurrency(v)} />
@@ -121,14 +150,6 @@ export default function Home() {
           ) : (
             <div className="text-center py-6 text-muted-foreground text-sm">Sem dados</div>
           )}
-          <div className="flex justify-center gap-4 mt-2">
-            {txByType.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                <span className="text-xs text-muted-foreground">{d.name}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="bg-card rounded-xl border border-border p-5">
@@ -154,12 +175,12 @@ export default function Home() {
         <div>
           <h2 className="font-semibold text-foreground mb-3">Ações Rápidas</h2>
           <div className="grid grid-cols-2 gap-2">
-            <QuickAction icon={Users} label="Novo Cliente" link="/clientes/novo" color="blue" bg="bg-blue-50" />
-            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/compras" color="green" bg="bg-green-50" />
-            <QuickAction icon={Table} label="Abrir Mesa" link="/mesas" color="teal" bg="bg-teal-50" />
-            <QuickAction icon={ClipboardList} label="Ver Pedidos" link="/pedidos" color="orange" bg="bg-orange-50" />
-            <QuickAction icon={Package} label="Gerenciar Produtos" link="/produtos" color="purple" bg="bg-purple-50" />
-            <QuickAction icon={Send} label="Enviar Cardápio" link="/enviar-cardapio" color="pink" bg="bg-pink-50" />
+            <QuickAction icon={Users} label="Novo Cliente" link="/clientes/novo" colorKey="blue" />
+            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/compras" colorKey="green" />
+            <QuickAction icon={Table} label="Abrir Mesa" link="/mesas" colorKey="teal" />
+            <QuickAction icon={ClipboardList} label="Ver Pedidos" link="/pedidos" colorKey="orange" />
+            <QuickAction icon={Package} label="Gerenciar Produtos" link="/produtos" colorKey="purple" />
+            <QuickAction icon={Send} label="Enviar Cardápio" link="/enviar-cardapio" colorKey="pink" />
           </div>
         </div>
 
@@ -178,19 +199,12 @@ export default function Home() {
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-3">
                   <div>
-                    <p className="text-sm font-medium text-foreground line-clamp-1">{order.customer_name || "Cliente"}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{order.description || "Pedido"}</p>
+                    <p className="text-sm font-medium text-foreground">{order.customer_name || "Sem nome"}</p>
+                    <p className="text-xs text-muted-foreground">{order.description || "Sem descrição"}</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-foreground">{formatCurrency(order.amount)}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      order.status === "pendente" ? "bg-yellow-100 text-yellow-700" :
-                      order.status === "aprovado" ? "bg-green-100 text-green-700" :
-                      order.status === "finalizado" ? "bg-blue-100 text-blue-700" :
-                      "bg-gray-100 text-gray-700"
-                    }`}>
-                      {order.status}
-                    </span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-foreground">{formatCurrency(order.amount || 0)}</p>
+                    <p className="text-xs text-muted-foreground">{order.status}</p>
                   </div>
                 </div>
               ))}
@@ -199,23 +213,41 @@ export default function Home() {
         </div>
       </div>
 
-      {delinquent.length > 0 && (
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500" />
-            <h2 className="font-semibold text-foreground">Inadimplência ({delinquent.length} clientes)</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {delinquent.slice(0, 6).map((c) => (
-              <Link key={c.customer_id} to={`/clientes/${c.customer_id}`} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{c.customer_name}</p>
-                  <p className="text-xs text-muted-foreground">{c.days_owed} dias</p>
-                </div>
-                <span className="text-sm font-bold text-red-600">{formatCurrency(c.balance)}</span>
-              </Link>
-            ))}
-          </div>
+      {(delinquent.length > 0 || pendingOrders.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {pendingOrders.length > 0 && (
+            <div className="rounded-xl border p-5" style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5" style={{ color: "#f59e0b" }} />
+                <h3 className="font-semibold" style={{ color: "#92400e" }}>Pedidos Pendentes ({pendingOrders.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {pendingOrders.slice(0, 3).map((order) => (
+                  <div key={order.id} className="flex items-center justify-between text-sm">
+                    <span style={{ color: "#78716c" }}>{order.customer_name}</span>
+                    <span className="font-medium" style={{ color: "#92400e" }}>{formatCurrency(order.amount || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {delinquent.length > 0 && (
+            <div className="rounded-xl border p-5" style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5" style={{ color: "#ef4444" }} />
+                <h3 className="font-semibold" style={{ color: "#991b1b" }}>Inadimplentes ({delinquent.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {delinquent.slice(0, 3).map((c) => (
+                  <div key={c.id} className="flex items-center justify-between text-sm">
+                    <span style={{ color: "#78716c" }}>{c.name}</span>
+                    <span className="font-medium" style={{ color: "#ef4444" }}>{formatCurrency(c.balance || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
