@@ -1,4 +1,4 @@
-const CACHE_NAME = "fiadopro-v1";
+const CACHE_NAME = "fiadopro-v2-20260902";
 const OFFLINE_URL = "/";
 
 self.addEventListener("install", (event) => {
@@ -6,7 +6,13 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      )
+    ).then(() => clients.claim())
+  );
 });
 
 self.addEventListener("push", (event) => {

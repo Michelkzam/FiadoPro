@@ -178,13 +178,13 @@ export default function ClientPortal() {
           p_description: `Pedido online - ${cartDesc}`,
         });
 
-        const { data: balanceRows, error: balanceError } = await supabase.rpc("portal_update_balance", {
+        const { data: balanceResult, error: balanceError } = await supabase.rpc("portal_update_balance", {
           p_customer_id: customer.id,
           p_amount: cartTotal,
           p_type: "compra",
         });
         if (balanceError) throw balanceError;
-        const newBalance = balanceRows?.[0]?.balance ?? 0;
+        const newBalance = balanceResult?.balance ?? 0;
         setCustomer((prev) => ({ ...prev, balance: newBalance }));
 
         if (storeProfile?.phone) {

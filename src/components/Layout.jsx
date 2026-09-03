@@ -69,7 +69,7 @@ export default function Layout() {
       <NavItem
         key={item.path}
         item={item}
-        isActive={location.pathname === item.path}
+        isActive={item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path)}
         badge={item.path === "/pedidos" ? pendingOrders.length : 0}
         onClick={onClickLink}
       />

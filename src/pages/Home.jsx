@@ -155,7 +155,7 @@ export default function Home() {
           <h2 className="font-semibold text-foreground mb-3">Ações Rápidas</h2>
           <div className="grid grid-cols-2 gap-2">
             <QuickAction icon={Users} label="Novo Cliente" link="/clientes/novo" color="blue" />
-            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/clientes" color="green" />
+            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/compras" color="green" />
             <QuickAction icon={Table} label="Abrir Mesa" link="/mesas" color="purple" />
             <QuickAction icon={ClipboardList} label="Ver Pedidos" link="/pedidos" color="amber" />
             <QuickAction icon={Package} label="Gerenciar Produtos" link="/produtos" color="teal" />

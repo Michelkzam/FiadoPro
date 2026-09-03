@@ -20,35 +20,24 @@ export function useTransactionActions(customer) {
 
       setLoading(true);
       try {
-        const currentCustomer = await db.entities.Customer.get(customer.id);
-        if (!currentCustomer) {
-          throw new Error("Cliente não encontrado");
-        }
-
         const parsedAmount = parseFloat(amount);
-
         const now = new Date();
         const dateStr = format(now, "dd/MM/yyyy");
         const timeStr = format(now, "HH:mm");
 
-        await db.entities.Transaction.create({
-          customer_id: customer.id,
-          customer_name: customer.name,
-          type,
-          amount: parsedAmount,
-          date: dateStr,
-          time: timeStr,
-          description,
-        });
-
-        const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+        const { data: result, error } = await supabase.rpc("register_transaction_atomic", {
           p_customer_id: customer.id,
-          p_amount: parsedAmount,
+          p_customer_name: customer.name,
           p_type: type,
+          p_amount: parsedAmount,
+          p_date: dateStr,
+          p_time: timeStr,
+          p_description: description || null,
         });
 
-        if (balanceError) throw balanceError;
+        if (error) throw error;
 
+        const newBalance = result?.new_balance ?? 0;
         return { newBalance, type, amount: parsedAmount };
       } catch (error) {
         if (retryCount < MAX_RETRY_ATTEMPTS) {
@@ -128,28 +117,19 @@ export function useOrderActions() {
   const approveOrder = useCallback(async (order, { total, itemLines }) => {
     setLoading(true);
     try {
-      const customer = await db.entities.Customer.get(order.customer_id);
-      const previousBalance = customer?.balance || 0;
+      const previousBalance = order.customer_id
+        ? (await db.entities.Customer.get(order.customer_id))?.balance || 0
+        : 0;
 
-      await db.entities.Order.update(order.id, { status: "aprovado" });
-
-      await db.entities.Transaction.create({
-        customer_id: order.customer_id,
-        customer_name: order.customer_name,
-        type: "compra",
-        amount: total,
-        date: format(new Date(), "dd/MM/yyyy"),
-        time: format(new Date(), "HH:mm"),
-        description: order.description || "Pedido aprovado",
+      const { data: result, error } = await supabase.rpc("approve_order_atomic", {
+        p_order_id: order.id,
+        p_total: total,
+        p_description: order.description || "Pedido aprovado",
       });
 
-      const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
-        p_customer_id: order.customer_id,
-        p_amount: total,
-        p_type: "compra",
-      });
+      if (error) throw error;
 
-      if (balanceError) throw balanceError;
+      const newBalance = result?.new_balance ?? 0;
 
       if (order.customer_phone) {
         const totalFmt = formatCurrency(total);
@@ -261,29 +241,20 @@ export function useComandaActions() {
       await db.entities.Comanda.update(comandaId, updates);
 
       if (comanda.customer_id && comanda.total > 0) {
-        const customer = await db.entities.Customer.get(comanda.customer_id);
-        if (customer) {
-          const now = new Date();
-          const { format: formatDate } = await import("date-fns");
+        const now = new Date();
+        const { format: formatDate } = await import("date-fns");
 
-          await db.entities.Transaction.create({
-            customer_id: comanda.customer_id,
-            customer_name: comanda.customer_name || customer.name,
-            type: "compra",
-            amount: comanda.total,
-            date: formatDate(now, "dd/MM/yyyy"),
-            time: formatDate(now, "HH:mm"),
-            description: `Comanda Mesa ${comanda.table_number} - ${comanda.label}`,
-          });
+        const { error: txError } = await supabase.rpc("register_transaction_atomic", {
+          p_customer_id: comanda.customer_id,
+          p_customer_name: comanda.customer_name || "",
+          p_type: "compra",
+          p_amount: comanda.total,
+          p_date: formatDate(now, "dd/MM/yyyy"),
+          p_time: formatDate(now, "HH:mm"),
+          p_description: `Comanda Mesa ${comanda.table_number} - ${comanda.label}`,
+        });
 
-          const { error: balanceError } = await supabase.rpc("update_customer_balance", {
-            p_customer_id: comanda.customer_id,
-            p_amount: comanda.total,
-            p_type: "compra",
-          });
-
-          if (balanceError) throw balanceError;
-        }
+        if (txError) throw txError;
       }
 
       return true;

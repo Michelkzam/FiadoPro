@@ -4,7 +4,7 @@ const sanitizePhone = (phone) => (phone || "").replace(/\D/g, "");
 
 export const sendWhatsApp = async (phone, message) => {
   const clean = sanitizePhone(phone);
-  if (!clean) return;
+  if (!clean) return { method: "skipped", success: false, reason: "no_phone" };
 
   const { instanceId, token } = getConfig();
 
@@ -18,5 +18,5 @@ export const sendWhatsApp = async (phone, message) => {
   }
 
   window.open(`https://wa.me/55${clean}?text=${encodeURIComponent(message)}`, "_blank");
-  return { method: "manual", success: true };
+  return { method: "manual", success: true, note: "WhatsApp API indisponível. Mensagem aberta manualmente." };
 };

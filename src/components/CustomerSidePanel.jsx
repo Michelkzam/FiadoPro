@@ -17,6 +17,7 @@ export default function CustomerSidePanel({ customerId, onClose }) {
 
   const balance = customer?.balance || 0;
   const isPositive = balance < 0;
+  const isDebtor = balance > 0;
 
   return (
     <>
@@ -66,7 +67,7 @@ export default function CustomerSidePanel({ customerId, onClose }) {
             </div>
 
             <div className="rounded-xl border border-border p-4 space-y-3">
-              {balance > 0 && (
+              {isDebtor && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <TrendingDown className="w-4 h-4 text-red-500" />

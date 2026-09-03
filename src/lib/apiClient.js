@@ -1,7 +1,5 @@
 import { supabase } from "./supabase";
 
-const AUTH_TOKEN_KEY = "fiadopro_auth_token";
-
 class ApiError extends Error {
   constructor(message, status, data) {
     super(message);
@@ -10,18 +8,6 @@ class ApiError extends Error {
     this.data = data;
   }
 }
-
-const getStoredToken = () => localStorage.getItem(AUTH_TOKEN_KEY);
-
-const storeTokens = (accessToken) => {
-  if (accessToken) {
-    localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
-  }
-};
-
-const clearTokens = () => {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-};
 
 const handleSupabaseError = (error) => {
   console.error("[Supabase Error] full object:", JSON.stringify(error, null, 2));
@@ -38,8 +24,7 @@ export const auth = {
   login: async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) handleSupabaseError(error);
-    storeTokens(data.session?.access_token);
-    return { accessToken: data.session?.access_token, refreshToken: data.session?.refresh_token, user: data.user };
+    return { user: data.user };
   },
 
   register: async (userData) => {
@@ -48,15 +33,11 @@ export const auth = {
       password: userData.password,
     });
     if (error) handleSupabaseError(error);
-    if (data.session) {
-      storeTokens(data.session.access_token);
-    }
-    return { accessToken: data.session?.access_token, user: data.user };
+    return { user: data.user };
   },
 
   logout: async () => {
     await supabase.auth.signOut();
-    clearTokens();
   },
 
   me: async () => {
@@ -146,52 +127,19 @@ export const createEntityService = (tableName) => ({
     }
     console.log("[API] Creating record in", tableName, ":", JSON.stringify(record, null, 2));
 
-    // Fallback: fetch direto ao Supabase REST API para capturar erro 400 com detalhes
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${session.access_token}`,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify(record),
-      });
-
-      if (!res.ok) {
-        const body = await res.text();
-        console.error(`[API] Fetch fallback ${res.status} ${res.statusText}:`, body);
-        throw new ApiError(
-          `Erro ${res.status}: ${body}`,
-          res.status,
-          { raw: body }
-        );
-      }
-
-      const rows = await res.json();
-      const data = Array.isArray(rows) ? rows[0] : rows;
-      console.log("[API] Create success:", data);
-      return data;
-    } catch (fetchErr) {
-      // Se o fetch direto falhar, usar Supabase client como fallback
-      console.warn("[API] Fetch fallback failed, trying Supabase client:", fetchErr.message);
-      const { data, error, status, statusText } = await supabase
-        .from(tableName)
-        .insert(record)
-        .select()
-        .single();
-      if (error) {
-        console.error("[API] Create error status:", status, statusText);
-        console.error("[API] Create error:", JSON.stringify(error, null, 2));
-        handleSupabaseError(error);
-      }
-      console.log("[API] Create success:", data);
-      return data;
+    const { data, error, status, statusText } = await supabase
+      .from(tableName)
+      .insert(record)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("[API] Create error status:", status, statusText);
+      console.error("[API] Create error:", JSON.stringify(error, null, 2));
+      handleSupabaseError(error);
     }
+    console.log("[API] Create success:", data);
+    return data;
   },
 
   update: async (id, updates) => {
@@ -282,7 +230,7 @@ export const entities = {
   CampanhaAnalytics: createEntityService("campanha_analytics"),
 };
 
-export { ApiError, clearTokens, storeTokens, getStoredToken };
+export { ApiError };
 
 export default {
   auth,

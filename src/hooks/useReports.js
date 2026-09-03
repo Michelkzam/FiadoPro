@@ -92,8 +92,8 @@ export function useDemandForecast() {
 
       return {
         byDayOfWeek,
-        averageDailyOrders: orders ? orders.length / 7 : 0,
-        averageDailyRevenue: orders ? orders.reduce((s, o) => s + (o.amount || 0), 0) / 7 : 0,
+        averageDailyOrders: orders ? orders.length / 90 : 0,
+        averageDailyRevenue: orders ? orders.reduce((s, o) => s + (o.amount || 0), 0) / 90 : 0,
       };
     },
   });

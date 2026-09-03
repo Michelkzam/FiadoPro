@@ -1,13 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/constants";
 
-export async function createNotification({ title, body, url = "/", tag = null, userId = null }) {
+export async function createNotification({ title, body, url = "/", tag = null }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { error } = await supabase.from("notifications").insert({
     title,
     body,
     url,
     tag: tag || `notif-${Date.now()}`,
-    user_id: userId,
+    user_id: user?.id || null,
   });
 
   if (error) {

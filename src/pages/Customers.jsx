@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Plus, Search, Phone, ChevronRight, Filter, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,18 +6,13 @@ import { useState, useMemo } from "react";
 import BalanceBadge from "../components/BalanceBadge";
 import CustomerSidePanel from "../components/CustomerSidePanel";
 import LoadingSpinner from "../components/LoadingSpinner";
-import db from "@/lib/db";
+import { useCustomers } from "@/hooks/useQueries";
 
 export default function Customers() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
-  const { data: customers = [], isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["customers"],
-    queryFn: () => db.entities.Customer.list(),
-    retry: 2,
-    refetchOnWindowFocus: true,
-  });
+  const { data: customers = [], isLoading, error, refetch, isFetching } = useCustomers();
 
   const filtered = useMemo(() => customers.filter((c) => {
     const matchSearch =

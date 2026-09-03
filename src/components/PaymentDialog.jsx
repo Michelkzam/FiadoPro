@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import db from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency, PAYMENT_METHODS } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
@@ -40,30 +39,22 @@ export default function PaymentDialog({ customer, onClose, onSuccess }) {
       : `Pagamento via ${PAYMENT_METHODS.find(m => m.value === method1)?.label}`;
 
     try {
-      await db.entities.Transaction.create({
-        customer_id: customer.id,
-        customer_name: customer.name,
-        type: "pagamento",
-        amount: total,
-        date: today,
-        time: now,
-        description: desc,
-      });
-
-      const { data: newBalance, error: balanceError } = await supabase.rpc("update_customer_balance", {
+      const { data: result, error: txError } = await supabase.rpc("register_transaction_atomic", {
         p_customer_id: customer.id,
-        p_amount: total,
+        p_customer_name: customer.name,
         p_type: "pagamento",
+        p_amount: total,
+        p_date: today,
+        p_time: now,
+        p_description: desc,
       });
 
-      if (balanceError) {
-        console.error("Erro na RPC update_customer_balance:", balanceError);
-        const fallbackBalance = totalDebito - total;
-        await db.entities.Customer.update(customer.id, { balance: fallbackBalance });
-        var finalBalance = fallbackBalance;
-      } else {
-        var finalBalance = newBalance;
+      if (txError) {
+        console.error("Erro na RPC register_transaction_atomic:", txError);
+        throw txError;
       }
+
+      const finalBalance = result?.new_balance ?? (totalDebito - total);
 
       if (customer.phone) {
         let saldoMsg = "";

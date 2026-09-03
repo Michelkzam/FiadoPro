@@ -46,7 +46,9 @@ export default function Orders() {
   const { data: orders = [], isLoading } = useOrders();
 
   useEffect(() => {
+    let mounted = true;
     const unsubscribe = db.entities.Order.subscribe((event) => {
+      if (!mounted) return;
       if (event.type === "create") {
         toast.info(`Novo pedido de ${event.data?.customer_name || "cliente"}!`);
         if (event.data) notifyNewOrder(event.data);
@@ -56,7 +58,10 @@ export default function Orders() {
       }
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     });
-    return unsubscribe;
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [queryClient]);
 
   const handleApproveOrder = async (order, data) => {
@@ -166,12 +171,20 @@ export default function Orders() {
         <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5">
           <Calendar className="w-4 h-4 text-muted-foreground" />
           <input
-            type="text"
-            placeholder="DD/MM/AAAA"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="text-sm w-28 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-            maxLength={10}
+            type="date"
+            value={dateFilter ? (() => {
+              const parts = dateFilter.split("/");
+              return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
+            })() : ""}
+            onChange={(e) => {
+              if (e.target.value) {
+                const parts = e.target.value.split("-");
+                setDateFilter(`${parts[2]}/${parts[1]}/${parts[0]}`);
+              } else {
+                setDateFilter("");
+              }
+            }}
+            className="text-sm w-40 bg-transparent outline-none text-foreground"
           />
         </div>
         <button
