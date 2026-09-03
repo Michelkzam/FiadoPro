@@ -8,17 +8,17 @@ import { STORE_NAME_FALLBACK } from "@/lib/constants";
 import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/mesas", label: "Mesas", icon: Table },
-  { path: "/fila-espera", label: "Fila de Espera", icon: Clock },
-  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send },
-  { path: "/pedidos", label: "Pedidos", icon: ClipboardList },
-  { path: "/compras", label: "Vendas", icon: ShoppingCart },
-  { path: "/historico", label: "Histórico", icon: History },
-  { path: "/relatorios", label: "Relatórios", icon: FileText },
-  { path: "/cadastros", label: "Cadastros", icon: Package },
-  { path: "/whatsapp-ai", label: "WhatsApp AI", icon: MessageSquare },
-  { path: "/configuracoes", label: "Configurações", icon: Settings },
+  { path: "/", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
+  { path: "/mesas", label: "Mesas", icon: Table, color: "text-teal-500", bg: "bg-teal-50" },
+  { path: "/fila-espera", label: "Fila de Espera", icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
+  { path: "/enviar-cardapio", label: "Enviar Cardápio", icon: Send, color: "text-purple-500", bg: "bg-purple-50" },
+  { path: "/pedidos", label: "Pedidos", icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-50" },
+  { path: "/compras", label: "Vendas", icon: ShoppingCart, color: "text-green-500", bg: "bg-green-50" },
+  { path: "/historico", label: "Histórico", icon: History, color: "text-slate-500", bg: "bg-slate-50" },
+  { path: "/relatorios", label: "Relatórios", icon: FileText, color: "text-indigo-500", bg: "bg-indigo-50" },
+  { path: "/cadastros", label: "Cadastros", icon: Package, color: "text-cyan-500", bg: "bg-cyan-50" },
+  { path: "/whatsapp-ai", label: "WhatsApp AI", icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-50" },
+  { path: "/configuracoes", label: "Configurações", icon: Settings, color: "text-gray-500", bg: "bg-gray-50" },
 ];
 
 function NavItem({ item, isActive, badge, onClick }) {
@@ -27,14 +27,16 @@ function NavItem({ item, isActive, badge, onClick }) {
     <Link
       to={item.path}
       onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-        isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"
+      className={`sidebar-item ${
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : `text-foreground hover:bg-muted ${item.bg || ""}`
       }`}
     >
-      <Icon className="w-4 h-4" />
+      <Icon className={`w-4 h-4 ${isActive ? "text-primary-foreground" : item.color || ""}`} />
       {item.label}
       {badge > 0 && (
-        <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">
+        <span className="ml-auto bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full">
           {badge}
         </span>
       )}

@@ -53,6 +53,31 @@ module.exports = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))',
+  				muted: 'hsl(var(--success-muted))'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning))',
+  				foreground: 'hsl(var(--warning-foreground))',
+  				muted: 'hsl(var(--warning-muted))'
+  			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info))',
+  				foreground: 'hsl(var(--info-foreground))',
+  				muted: 'hsl(var(--info-muted))'
+  			},
+  			purple: {
+  				DEFAULT: 'hsl(var(--purple))',
+  				foreground: 'hsl(var(--purple-foreground))',
+  				muted: 'hsl(var(--purple-muted))'
+  			},
+  			teal: {
+  				DEFAULT: 'hsl(var(--teal))',
+  				foreground: 'hsl(var(--teal-foreground))',
+  				muted: 'hsl(var(--teal-muted))'
+  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

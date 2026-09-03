@@ -32,6 +32,21 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 76% 96%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 92% 95%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 199 89% 95%;
+    --purple: 262 83% 58%;
+    --purple-foreground: 0 0% 100%;
+    --purple-muted: 262 83% 96%;
+    --teal: 168 76% 36%;
+    --teal-foreground: 0 0% 100%;
+    --teal-muted: 168 76% 96%;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 221 83% 53%;
@@ -67,6 +82,21 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 71% 15%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 92% 15%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-muted: 199 89% 15%;
+    --purple: 262 83% 58%;
+    --purple-foreground: 0 0% 100%;
+    --purple-muted: 262 83% 15%;
+    --teal: 168 76% 42%;
+    --teal-foreground: 0 0% 100%;
+    --teal-muted: 168 76% 15%;
     --sidebar-background: 222 47% 9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 221 83% 53%;
@@ -85,5 +115,62 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-success { color: hsl(var(--success)); }
+  .bg-success { background-color: hsl(var(--success)); }
+  .bg-success-muted { background-color: hsl(var(--success-muted)); }
+  .border-success { border-color: hsl(var(--success)); }
+  
+  .text-warning { color: hsl(var(--warning)); }
+  .bg-warning { background-color: hsl(var(--warning)); }
+  .bg-warning-muted { background-color: hsl(var(--warning-muted)); }
+  .border-warning { border-color: hsl(var(--warning)); }
+  
+  .text-info { color: hsl(var(--info)); }
+  .bg-info { background-color: hsl(var(--info)); }
+  .bg-info-muted { background-color: hsl(var(--info-muted)); }
+  .border-info { border-color: hsl(var(--info)); }
+  
+  .text-purple { color: hsl(var(--purple)); }
+  .bg-purple { background-color: hsl(var(--purple)); }
+  .bg-purple-muted { background-color: hsl(var(--purple-muted)); }
+  .border-purple { border-color: hsl(var(--purple)); }
+  
+  .text-teal { color: hsl(var(--teal)); }
+  .bg-teal { background-color: hsl(var(--teal)); }
+  .bg-teal-muted { background-color: hsl(var(--teal-muted)); }
+  .border-teal { border-color: hsl(var(--teal)); }
+  
+  .gradient-blue {
+    background: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(199 89% 48%) 100%);
+  }
+  .gradient-green {
+    background: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(168 76% 36%) 100%);
+  }
+  .gradient-purple {
+    background: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(221 83% 53%) 100%);
+  }
+  .gradient-warm {
+    background: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(27 87% 67%) 100%);
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(262 83% 58%) 50%, hsl(168 76% 36%) 100%);
+  }
+  
+  .card-colored {
+    @apply bg-card rounded-xl border border-border shadow-sm transition-all duration-200;
+  }
+  .card-colored:hover {
+    @apply shadow-md;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+  }
+  .sidebar-item:hover {
+    @apply transform translate-x-1;
   }
 }

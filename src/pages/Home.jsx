@@ -7,31 +7,31 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
-function StatCard({ icon: Icon, title, value, subtitle, link, color = "primary" }) {
+function StatCard({ icon: Icon, title, value, subtitle, link, color = "primary", gradient }) {
   return (
     <Link to={link} className="block">
-      <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow group">
+      <div className={`rounded-xl border border-border p-5 hover:shadow-md transition-all duration-200 group ${gradient || "bg-card"}`}>
         <div className="flex items-center justify-between mb-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center bg-${color}/10`}>
-            <Icon className={`w-5 h-5 text-${color}`} />
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${gradient ? "bg-white/20" : `bg-${color}/10`}`}>
+            <Icon className={`w-5 h-5 ${gradient ? "text-white" : `text-${color}`}`} />
           </div>
           <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        <p className="text-2xl font-bold text-foreground">{value}</p>
-        <p className="text-sm text-muted-foreground mt-1">{title}</p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        <p className={`text-2xl font-bold ${gradient ? "text-white" : "text-foreground"}`}>{value}</p>
+        <p className={`text-sm mt-1 ${gradient ? "text-white/80" : "text-muted-foreground"}`}>{title}</p>
+        {subtitle && <p className={`text-xs mt-1 ${gradient ? "text-white/70" : "text-muted-foreground"}`}>{subtitle}</p>}
       </div>
     </Link>
   );
 }
 
-function QuickAction({ icon: Icon, label, link, color }) {
+function QuickAction({ icon: Icon, label, link, color, bg }) {
   return (
     <Link
       to={link}
-      className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+      className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-all duration-200 hover:shadow-sm"
     >
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${color}/10`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bg || `bg-${color}/10`}`}>
         <Icon className={`w-5 h-5 text-${color}`} />
       </div>
       <span className="text-sm font-medium text-foreground">{label}</span>
@@ -77,10 +77,10 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={DollarSign} title="Total em Débito" value={formatCurrency(totalDebt)} link="/relatorios" color="red" />
-        <StatCard icon={TrendingUp} title="Vendas do Mês" value={formatCurrency(monthPurchases)} subtitle={`${purchaseChange >= 0 ? "+" : ""}${purchaseChange.toFixed(1)}% vs mês anterior`} link="/relatorios" color="primary" />
-        <StatCard icon={DollarSign} title="Recebido no Mês" value={formatCurrency(monthPayments)} link="/relatorios" color="green" />
-        <StatCard icon={Users} title="Clientes Ativos" value={customers.filter((c) => c.status === "ativo").length} link="/clientes" color="blue" />
+        <StatCard icon={DollarSign} title="Total em Débito" value={formatCurrency(totalDebt)} link="/relatorios" color="red" gradient="bg-gradient-to-br from-red-500 to-rose-600" />
+        <StatCard icon={TrendingUp} title="Vendas do Mês" value={formatCurrency(monthPurchases)} subtitle={`${purchaseChange >= 0 ? "+" : ""}${purchaseChange.toFixed(1)}% vs mês anterior`} link="/relatorios" color="primary" gradient="bg-gradient-to-br from-blue-500 to-indigo-600" />
+        <StatCard icon={DollarSign} title="Recebido no Mês" value={formatCurrency(monthPayments)} link="/relatorios" color="green" gradient="bg-gradient-to-br from-emerald-500 to-teal-600" />
+        <StatCard icon={Users} title="Clientes Ativos" value={customers.filter((c) => c.status === "ativo").length} link="/clientes" color="purple" gradient="bg-gradient-to-br from-purple-500 to-violet-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -154,12 +154,12 @@ export default function Home() {
         <div>
           <h2 className="font-semibold text-foreground mb-3">Ações Rápidas</h2>
           <div className="grid grid-cols-2 gap-2">
-            <QuickAction icon={Users} label="Novo Cliente" link="/clientes/novo" color="blue" />
-            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/compras" color="green" />
-            <QuickAction icon={Table} label="Abrir Mesa" link="/mesas" color="purple" />
-            <QuickAction icon={ClipboardList} label="Ver Pedidos" link="/pedidos" color="amber" />
-            <QuickAction icon={Package} label="Gerenciar Produtos" link="/produtos" color="teal" />
-            <QuickAction icon={Send} label="Enviar Cardápio" link="/enviar-cardapio" color="pink" />
+            <QuickAction icon={Users} label="Novo Cliente" link="/clientes/novo" color="blue" bg="bg-blue-50" />
+            <QuickAction icon={ShoppingCart} label="Nova Transação" link="/compras" color="green" bg="bg-green-50" />
+            <QuickAction icon={Table} label="Abrir Mesa" link="/mesas" color="teal" bg="bg-teal-50" />
+            <QuickAction icon={ClipboardList} label="Ver Pedidos" link="/pedidos" color="orange" bg="bg-orange-50" />
+            <QuickAction icon={Package} label="Gerenciar Produtos" link="/produtos" color="purple" bg="bg-purple-50" />
+            <QuickAction icon={Send} label="Enviar Cardápio" link="/enviar-cardapio" color="pink" bg="bg-pink-50" />
           </div>
         </div>
 
