@@ -2,11 +2,9 @@ import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Wifi, WifiOff, QrCode, Bot, User, Settings, RefreshCw, MessageSquare, BarChart3, Clock, CheckCircle, XCircle, Loader2, Phone } from "lucide-react";
+import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, MessageSquare, BarChart3, Clock, CheckCircle, XCircle, Loader2, Phone, Zap } from "lucide-react";
 
 function StatusBadge({ status }) {
   const config = {
@@ -26,96 +24,35 @@ function StatusBadge({ status }) {
   );
 }
 
-function QRCodeDisplay({ qrCode, onRefresh }) {
+function QRCodeDisplay({ qrCode, onRefresh, isConnecting }) {
   if (!qrCode) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <QrCode className="w-16 h-16 text-muted-foreground/30" />
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+          <QrCode className="w-10 h-10 text-muted-foreground/30" />
+        </div>
         <p className="text-sm text-muted-foreground">Nenhum QR Code disponível</p>
-        <Button onClick={onRefresh} variant="outline" size="sm" className="gap-2">
-          <RefreshCw className="w-4 h-4" /> Gerar QR Code
+        <Button onClick={onRefresh} variant="outline" size="sm" className="gap-2" disabled={isConnecting}>
+          {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          {isConnecting ? "Conectando..." : "Gerar QR Code"}
         </Button>
       </div>
     );
   }
   
   return (
-    <div className="flex flex-col items-center py-4 space-y-4">
-      <div className="bg-white p-4 rounded-xl border border-border shadow-sm">
-        <img src={qrCode} alt="QR Code WhatsApp" className="w-64 h-64 object-contain" />
+    <div className="flex flex-col items-center py-6 space-y-4">
+      <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-lg">
+        <img src={qrCode} alt="QR Code WhatsApp" className="w-72 h-72 object-contain" />
       </div>
-      <p className="text-xs text-muted-foreground text-center">
-        Escaneie com o WhatsApp no seu celular
-      </p>
+      <div className="text-center space-y-1">
+        <p className="text-sm font-medium text-foreground">Escaneie com o WhatsApp</p>
+        <p className="text-xs text-muted-foreground">
+          Abra o WhatsApp no celular → Menu → Dispositivos conectados → Conectar dispositivo
+        </p>
+      </div>
       <Button onClick={onRefresh} variant="outline" size="sm" className="gap-2">
         <RefreshCw className="w-4 h-4" /> Atualizar QR
-      </Button>
-    </div>
-  );
-}
-
-function ConnectionConfig({ session, onSave }) {
-  const [form, setForm] = useState({
-    api_url: session?.api_url || "https://api.evolutionapi.com.br",
-    api_key: session?.api_key || "",
-    instance_id: session?.instance_id || "",
-    phone_number: session?.phone_number || "",
-  });
-  
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label>Provider</Label>
-        <select
-          value={session?.provider || "evolution"}
-          className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground mt-1"
-          disabled
-        >
-          <option value="evolution">Evolution API (Recomendado - Gratuito)</option>
-          <option value="baileys">Baileys (Local)</option>
-          <option value="zapi">Z-API (Pago)</option>
-        </select>
-      </div>
-      
-      <div>
-        <Label>URL da API</Label>
-        <Input
-          value={form.api_url}
-          onChange={(e) => setForm({ ...form, api_url: e.target.value })}
-          placeholder="https://api.evolutionapi.com.br"
-        />
-      </div>
-      
-      <div>
-        <Label>API Key</Label>
-        <Input
-          type="password"
-          value={form.api_key}
-          onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-          placeholder="Sua API Key do Evolution"
-        />
-      </div>
-      
-      <div>
-        <Label>Instance ID</Label>
-        <Input
-          value={form.instance_id}
-          onChange={(e) => setForm({ ...form, instance_id: e.target.value })}
-          placeholder="Nome da instância"
-        />
-      </div>
-      
-      <div>
-        <Label>Número WhatsApp</Label>
-        <Input
-          value={form.phone_number}
-          onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-          placeholder="5511999999999"
-        />
-      </div>
-      
-      <Button onClick={() => onSave(form)} className="w-full gap-2">
-        <Settings className="w-4 h-4" /> Salvar Configuração
       </Button>
     </div>
   );
@@ -139,8 +76,8 @@ function StatsCard({ icon: Icon, label, value, color = "primary" }) {
 
 export default function WhatsAppConnectionPanel() {
   const queryClient = useQueryClient();
-  const [showConfig, setShowConfig] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   
   const { data: session, isLoading: loadingSession } = useQuery({
     queryKey: ["wa_session"],
@@ -148,7 +85,7 @@ export default function WhatsAppConnectionPanel() {
       const { data } = await supabase.rpc("wa_get_session", { p_session_id: "DEFAULT_SESSION" });
       return data;
     },
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
   
   const { data: stats } = useQuery({
@@ -163,11 +100,7 @@ export default function WhatsAppConnectionPanel() {
   const { data: conversations = [] } = useQuery({
     queryKey: ["wa_conversations"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("wa_conversas")
-        .select("*")
-        .order("last_message_at", { ascending: false })
-        .limit(50);
+      const { data } = await supabase.from("wa_conversas").select("*").order("last_message_at", { ascending: false }).limit(50);
       return data || [];
     },
     refetchInterval: 10000,
@@ -176,11 +109,7 @@ export default function WhatsAppConnectionPanel() {
   const { data: queue = [] } = useQuery({
     queryKey: ["wa_queue"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("wa_fila_atendimento")
-        .select("*")
-        .eq("status", "aguardando")
-        .order("created_at", { ascending: false });
+      const { data } = await supabase.from("wa_fila_atendimento").select("*").eq("status", "aguardando").order("created_at", { ascending: false });
       return data || [];
     },
     refetchInterval: 5000,
@@ -214,26 +143,22 @@ export default function WhatsAppConnectionPanel() {
     });
   }, [session, updateSession]);
   
-  const saveConfig = useCallback((config) => {
-    updateSession.mutate({
-      p_session_id: session?.session_id || "DEFAULT_SESSION",
-      p_status: session?.status || "desconectado",
-      p_instance_id: config.instance_id,
-      p_api_url: config.api_url,
-      p_api_key: config.api_key,
-      p_phone_number: config.phone_number,
-      p_provider: session?.provider || "evolution",
-    });
-    setShowConfig(false);
-  }, [session, updateSession]);
-  
-  const refreshQR = useCallback(() => {
-    updateSession.mutate({
-      p_session_id: session?.session_id || "DEFAULT_SESSION",
-      p_status: "aguardando_qr",
-    });
-    toast.info("Solicitando novo QR Code...");
-  }, [session, updateSession]);
+  const startConnection = useCallback(async () => {
+    setIsConnecting(true);
+    try {
+      await supabase.rpc("wa_upsert_session", {
+        p_session_id: "DEFAULT_SESSION",
+        p_status: "aguardando_qr",
+        p_provider: "baileys",
+      });
+      queryClient.invalidateQueries({ queryKey: ["wa_session"] });
+      toast.info("Iniciando conexão Baileys...");
+    } catch (error) {
+      toast.error("Erro ao iniciar conexão");
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [queryClient]);
   
   if (loadingSession) {
     return (
@@ -248,14 +173,11 @@ export default function WhatsAppConnectionPanel() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">WhatsApp AI Agent</h2>
-          <p className="text-sm text-muted-foreground">Conexão e controle do bot automatizado</p>
+          <p className="text-sm text-muted-foreground">Motor de atendimento gratuito via QR Code (Baileys)</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowStats(true)} className="gap-2">
-            <BarChart3 className="w-4 h-4" /> Métricas
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="gap-2">
-            <Settings className="w-4 h-4" /> Configurar
+            <BarChart3 className="w-4 h-4" /> Metricas
           </Button>
         </div>
       </div>
@@ -272,7 +194,7 @@ export default function WhatsAppConnectionPanel() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-foreground">Status da Conexão</h3>
+                <h3 className="font-semibold text-foreground">Status da Conexao</h3>
                 <StatusBadge status={session?.status || "desconectado"} />
               </div>
               {session?.phone_number && (
@@ -289,16 +211,31 @@ export default function WhatsAppConnectionPanel() {
             </div>
           </div>
           
-          {session?.status === "aguardando_qr" && (
-            <Button onClick={refreshQR} className="gap-2">
-              <QrCode className="w-4 h-4" /> Obter QR Code
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+              <Zap className="w-3 h-3" /> 100% Gratuito
+            </span>
+            {(!session?.status || session?.status === "desconectado") && (
+              <Button onClick={startConnection} className="gap-2" disabled={isConnecting}>
+                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                {isConnecting ? "Conectando..." : "Conectar WhatsApp"}
+              </Button>
+            )}
+          </div>
         </div>
         
-        {session?.status === "aguardando_qr" && session?.qr_code && (
+        {session?.status === "aguardando_qr" && (
           <div className="border-t border-border pt-4">
-            <QRCodeDisplay qrCode={session.qr_code} onRefresh={refreshQR} />
+            <QRCodeDisplay qrCode={session.qr_code} onRefresh={startConnection} isConnecting={isConnecting} />
+          </div>
+        )}
+        
+        {session?.status === "conectado" && (
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">WhatsApp conectado e operacional</span>
+            </div>
           </div>
         )}
         
@@ -308,7 +245,7 @@ export default function WhatsAppConnectionPanel() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Bot className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Robô Automático</span>
+                  <span className="text-sm font-medium text-foreground">Robot Automatico</span>
                 </div>
                 <button
                   onClick={toggleRobot}
@@ -318,7 +255,7 @@ export default function WhatsAppConnectionPanel() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {session?.robot_active ? "Bot respondendo automaticamente" : "Bot pausado — mensagens não respondidas"}
+                {session?.robot_active ? "Bot respondendo automaticamente" : "Bot pausado - mensagens nao respondidas"}
               </p>
             </div>
             
@@ -336,7 +273,7 @@ export default function WhatsAppConnectionPanel() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {session?.human_mode ? "Modo manual — todas as conversas vão para a fila" : "Bot decide quando transferir"}
+                {session?.human_mode ? "Modo manual - todas as conversas vao para a fila" : "Bot decide quando transferir"}
               </p>
             </div>
           </div>
@@ -354,7 +291,7 @@ export default function WhatsAppConnectionPanel() {
               <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
                 <div>
                   <p className="text-sm font-medium text-foreground">{item.customer_name || item.phone_number}</p>
-                  <p className="text-xs text-muted-foreground">{item.phone_number} — {item.reason}</p>
+                  <p className="text-xs text-muted-foreground">{item.phone_number} - {item.reason}</p>
                 </div>
                 <StatusBadge status={item.priority === "urgente" ? "erro" : item.priority === "alta" ? "aguardando_qr" : "conectado"} />
               </div>
@@ -389,7 +326,7 @@ export default function WhatsAppConnectionPanel() {
                       {conv.customer_name || conv.phone_number}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {conv.phone_number} — {conv.flow_state?.replace(/_/g, " ")}
+                      {conv.phone_number} - {conv.flow_state?.replace(/_/g, " ")}
                     </p>
                   </div>
                 </div>
@@ -405,22 +342,11 @@ export default function WhatsAppConnectionPanel() {
         </div>
       </div>
       
-      <Dialog open={showConfig} onOpenChange={setShowConfig}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" /> Configuração WhatsApp
-            </DialogTitle>
-          </DialogHeader>
-          <ConnectionConfig session={session} onSave={saveConfig} />
-        </DialogContent>
-      </Dialog>
-      
       <Dialog open={showStats} onOpenChange={setShowStats}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" /> Métricas do Dia
+              <BarChart3 className="w-5 h-5" /> Metricas do Dia
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">

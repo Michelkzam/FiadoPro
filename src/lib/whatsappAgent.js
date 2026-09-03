@@ -225,7 +225,13 @@ export class WhatsAppAgent {
       const protocol = conversa.protocol || generateProtocol();
       return this.buildResponse(
         `👨‍💼 Entendi! Vou transferir para um atendente.\n\nAguarde um momento, em breve alguém irá atendê-lo.\n\n📋 Protocolo: *${protocol}*`,
-        { evento: "TRANSBORDO_HUMANO", transbordo_humano: true, protocol }
+        {
+          conexao: { provedor: "baileys_qrcode_free", metodo_autenticacao: "QR_CODE", custo_api: 0.00 },
+          evento: "TRANSBORDO_HUMANO",
+          transbordo_humano: true,
+          cliente: { nome: null, telefone_whatsapp: conversa.phone_number, documento_ou_empresa: null },
+          dados_contextuais: { categoria_ou_modulo: "SUPORTE", prioridade_ou_urgencia: "URGENTE", assunto_resumido: "Transferência para atendente humano", detalhes_completos: "Cliente solicitou atendente humano", atributos_especificos: { protocol } },
+        }
       );
     }
     
@@ -283,9 +289,11 @@ export class WhatsAppAgent {
         return this.buildResponse(
           `📋 *Dados da sua conta:*\n\nNome: ${customer.name}\nSaldo devedor: *${balance}*\nLimite de crédito: *${limit}*\n\nDeseja algo mais?\n1️⃣ Fazer pedido\n2️⃣ Registrar pagamento\n3️⃣ Voltar ao menu\n4️⃣ Sair`,
           {
+            conexao: { provedor: "baileys_qrcode_free", metodo_autenticacao: "QR_CODE", custo_api: 0.00 },
             evento: "CONSULTA_SALDO",
-            cliente: { nome: customer.name, telefone_whatsapp: customer.phone, cpf: customer.cpf },
-            dados_contextuais: { saldo: customer.balance, limite: customer.credit_limit },
+            transbordo_humano: false,
+            cliente: { nome: customer.name, telefone_whatsapp: customer.phone, documento_ou_empresa: customer.cpf },
+            dados_contextuais: { categoria_ou_modulo: "VENDAS", prioridade_ou_urgencia: "BAIXA", assunto_resumido: "Consulta de saldo", detalhes_completos: `Saldo devedor: ${balance}, Limite: ${limit}`, atributos_especificos: { saldo: customer.balance, limite: customer.credit_limit } },
           }
         );
       }
@@ -343,14 +351,11 @@ export class WhatsAppAgent {
         return this.buildResponse(
           `✅ Pedido registrado!\n\nDescrição: ${rawMessage}\nStatus: Aguardando aprovação\n\nVocê receberá uma confirmação em breve!`,
           {
-            evento: "NOVO_REGISTRO_SISTEMA",
-            cliente: { nome: customer.name, telefone_whatsapp: customer.phone },
-            dados_contextuais: {
-              categoria_ou_fluxo: "PEDIDO",
-              titulo_resumido: "Novo pedido via WhatsApp",
-              detalhes_completos: rawMessage,
-              metadados_especificos: { order_id: order.id, status: "pendente" },
-            },
+            conexao: { provedor: "baileys_qrcode_free", metodo_autenticacao: "QR_CODE", custo_api: 0.00 },
+            evento: "REGISTRO_PROCESSADO",
+            transbordo_humano: false,
+            cliente: { nome: customer.name, telefone_whatsapp: customer.phone, documento_ou_empresa: customer.cpf },
+            dados_contextuais: { categoria_ou_modulo: "VENDAS", prioridade_ou_urgencia: "MEDIA", assunto_resumido: "Novo pedido via WhatsApp", detalhes_completos: rawMessage, atributos_especificos: { order_id: order.id, status: "pendente" } },
           }
         );
       }
@@ -380,14 +385,11 @@ export class WhatsAppAgent {
             return this.buildResponse(
               `✅ Pagamento de *${formatCurrency(amount)}* registrado!\n\nNovo saldo: *${formatCurrency(newBalance)}*\n\nObrigado! 🙏`,
               {
-                evento: "NOVO_REGISTRO_SISTEMA",
-                cliente: { nome: customer.name, telefone_whatsapp: customer.phone },
-                dados_contextuais: {
-                  categoria_ou_fluxo: "PAGAMENTO",
-                  titulo_resumido: "Pagamento via WhatsApp",
-                  prioridade_ou_urgencia: "NORMAL",
-                  metadados_especificos: { amount, new_balance: newBalance },
-                },
+                conexao: { provedor: "baileys_qrcode_free", metodo_autenticacao: "QR_CODE", custo_api: 0.00 },
+                evento: "REGISTRO_PROCESSADO",
+                transbordo_humano: false,
+                cliente: { nome: customer.name, telefone_whatsapp: customer.phone, documento_ou_empresa: customer.cpf },
+                dados_contextuais: { categoria_ou_modulo: "VENDAS", prioridade_ou_urgencia: "BAIXA", assunto_resumido: "Pagamento registrado via WhatsApp", detalhes_completos: `Pagamento de ${formatCurrency(amount)}`, atributos_especificos: { amount, new_balance: newBalance } },
               }
             );
           }
@@ -430,10 +432,10 @@ export class WhatsAppAgent {
     return {
       message,
       payload,
-      engine_whatsapp: {
-        provedor: "evolution",
-        sessao_id: this.sessionId,
-        timestamp: new Date().toISOString(),
+      conexao: {
+        provedor: "baileys_qrcode_free",
+        metodo_autenticacao: "QR_CODE",
+        custo_api: 0.00,
       },
     };
   }
