@@ -36,6 +36,7 @@ const CouponsPage = lazy(() => import("./pages/CouponsPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const Cadastros = lazy(() => import("./pages/Cadastros"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
+const WhatsAppAIAgent = lazy(() => import("./pages/WhatsAppAIAgent"));
 
 const LoadingSpinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
             <Route path="/cadastros" element={<Cadastros />} />
             <Route path="/cadastros/:tab" element={<Cadastros />} />
             <Route path="/campanhas" element={<Campaigns />} />
+            <Route path="/whatsapp-ai" element={<WhatsAppAIAgent />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />

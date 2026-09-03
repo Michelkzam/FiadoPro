@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { LayoutDashboard, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings, Clock } from "lucide-react";
+import { LayoutDashboard, Store, FileText, LogOut, Menu, X, ShoppingCart, ClipboardList, Package, History, Send, Table, Settings, Clock, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { usePendingOrders, useStoreProfile } from "@/hooks/useQueries";
@@ -17,6 +17,7 @@ const navItems = [
   { path: "/historico", label: "Histórico", icon: History },
   { path: "/relatorios", label: "Relatórios", icon: FileText },
   { path: "/cadastros", label: "Cadastros", icon: Package },
+  { path: "/whatsapp-ai", label: "WhatsApp AI", icon: MessageSquare },
   { path: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 

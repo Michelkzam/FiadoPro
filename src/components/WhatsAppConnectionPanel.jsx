@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Wifi, WifiOff, QrCode, Bot, User, Settings, RefreshCw, MessageSquare, BarChart3, Clock, CheckCircle, XCircle, Loader2, Phone, Trash2, Plus } from "lucide-react";
-import { formatCurrency } from "@/lib/constants";
+import { Wifi, WifiOff, QrCode, Bot, User, Settings, RefreshCw, MessageSquare, BarChart3, Clock, CheckCircle, XCircle, Loader2, Phone } from "lucide-react";
 
 function StatusBadge({ status }) {
   const config = {
