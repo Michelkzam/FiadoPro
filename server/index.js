@@ -1,6 +1,7 @@
 import express from "express";
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
 import pino from "pino";
+import QRCode from "qrcode";
 import { createClient } from "@supabase/supabase-js";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -220,7 +221,7 @@ async function connectWhatsApp() {
       version,
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
       logger,
-      printQRInTerminal: true,
+      printQRInTerminal: false,
       browser: ["FiadoPro", "Chrome", "4.0.0"],
     });
 
@@ -228,9 +229,13 @@ async function connectWhatsApp() {
 
     sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
       if (qr) {
-        qrCode = qr;
+        try {
+          qrCode = await QRCode.toDataURL(qr, { width: 300, margin: 2 });
+        } catch {
+          qrCode = qr;
+        }
         await updateSession("aguardando_qr");
-        console.log("[QR] Escaneie o QR Code acima");
+        console.log("[QR] Acesse http://localhost:3001/qr para escanear");
       }
       if (connection === "close") {
         const code = lastDisconnect?.error?.output?.statusCode;
@@ -286,7 +291,34 @@ async function connectWhatsApp() {
 const app = express();
 app.use(express.json());
 
-app.get("/", (req, res) => res.json({ ok: true, status: connectionStatus }));
+app.get("/", (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html><head><title>FiadoPro WhatsApp</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:system-ui;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0fdf4}
+.card{background:white;padding:2rem;border-radius:1rem;box-shadow:0 4px 20px rgba(0,0,0,0.1);text-align:center;max-width:400px}
+h1{color:#166534;margin-bottom:0.5rem}p{color:#666;margin:0.5rem 0}
+.qr{margin:1rem 0}img{width:280px;height:280px;border:2px solid #e5e7eb;border-radius:0.5rem}
+.status{padding:0.5rem 1rem;border-radius:2rem;font-weight:600;font-size:0.875rem;display:inline-block;margin:1rem 0}
+.on{background:#dcfce7;color:#166534}.off{background:#fee2e2;color:#991b1b}.wait{background:#fef3c7;color:#92400e}
+.info{font-size:0.75rem;color:#9ca3af;margin-top:1rem}</style></head>
+<body><div class="card">
+<h1>FiadoPro WhatsApp</h1><p>Motor de atendimento gratuito</p>
+<div id="qr" class="qr"></div><div id="status"></div>
+<p class="info">Escaneie o QR Code com o WhatsApp<br>Menu > Dispositivos conectados > Conectar dispositivo</p>
+</div>
+<script>
+async function update(){try{
+const s=await fetch("/status").then(r=>r.json());
+const el=document.getElementById("status");
+if(s.status==="conectado"){el.innerHTML='<div class="status on">Conectado</div>';document.getElementById("qr").innerHTML="";}
+else if(s.status==="aguardando_qr"){el.innerHTML='<div class="status wait">Aguardando QR Code</div>';
+const q=await fetch("/qr").then(r=>r.json());if(q.qr){document.getElementById("qr").innerHTML='<img src="'+q.qr+'"/>';}
+}else{el.innerHTML='<div class="status off">Desconectado</div>';document.getElementById("qr").innerHTML="";}
+}catch(e){document.getElementById("status").innerHTML='<div class="status off">Servidor offline</div>';}}
+update();setInterval(update,2000);
+</script></body></html>`);
+});
+
 app.get("/qr", (req, res) => res.json({ qr: qrCode }));
 app.get("/status", (req, res) => res.json({ status: connectionStatus }));
 
