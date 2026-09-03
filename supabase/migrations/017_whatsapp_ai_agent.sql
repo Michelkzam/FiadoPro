@@ -6,7 +6,7 @@
 -- Tabela: wa_sessions (Sessões WhatsApp)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id TEXT NOT NULL UNIQUE DEFAULT 'DEFAULT_SESSION',
   status TEXT DEFAULT 'desconectado' CHECK (status IN ('aguardando_qr', 'conectado', 'desconectado', 'erro')),
   phone_number TEXT,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS wa_sessions (
 -- Tabela: wa_conversas (Conversas Ativas)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_conversas (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id TEXT DEFAULT 'DEFAULT_SESSION',
   phone_number TEXT NOT NULL,
   customer_id UUID REFERENCES customers(id),
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS wa_conversas (
 -- Tabela: wa_mensagens (Histórico de Mensagens)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_mensagens (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversa_id UUID NOT NULL REFERENCES wa_conversas(id) ON DELETE CASCADE,
   phone_number TEXT NOT NULL,
   direction TEXT NOT NULL CHECK (direction IN ('incoming', 'outgoing')),
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS wa_mensagens (
 -- Tabela: wa_fluxos (Fluxos de Atendimento)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_fluxos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
   domain TEXT DEFAULT 'crm_vendas' CHECK (domain IN ('crm_vendas', 'helpdesk', 'agendamento', 'custom')),
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS wa_fluxos (
 -- Tabela: wa_respostas_rapidas (Respostas Rápidas)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_respostas_rapidas (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   trigger_keyword TEXT NOT NULL,
   response_text TEXT NOT NULL,
   category TEXT DEFAULT 'geral',
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS wa_respostas_rapidas (
 -- Tabela: wa_fila_atendimento (Fila de Transbordo Humano)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_fila_atendimento (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversa_id UUID NOT NULL REFERENCES wa_conversas(id) ON DELETE CASCADE,
   phone_number TEXT NOT NULL,
   customer_name TEXT,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS wa_fila_atendimento (
 -- Tabela: wa_analytics (Métricas do Agent)
 -- =============================================
 CREATE TABLE IF NOT EXISTS wa_analytics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   date DATE DEFAULT CURRENT_DATE,
   total_conversas INTEGER DEFAULT 0,
   resolvidas_bot INTEGER DEFAULT 0,
