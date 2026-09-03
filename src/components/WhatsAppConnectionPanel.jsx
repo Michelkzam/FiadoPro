@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, MessageSquare, BarChart3, Clock, CheckCircle, XCircle, Loader2, Phone, Zap } from "lucide-react";
+import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, BarChart3, CheckCircle, XCircle, Loader2, Phone, Zap, Settings } from "lucide-react";
 
 function StatusBadge({ status }) {
   const config = {
@@ -31,7 +32,7 @@ function QRCodeDisplay({ qrCode, onRefresh, isConnecting }) {
         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
           <QrCode className="w-10 h-10 text-muted-foreground/30" />
         </div>
-        <p className="text-sm text-muted-foreground">Nenhum QR Code disponível</p>
+        <p className="text-sm text-muted-foreground">Nenhum QR Code disponivel</p>
         <Button onClick={onRefresh} variant="outline" size="sm" className="gap-2" disabled={isConnecting}>
           {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           {isConnecting ? "Conectando..." : "Gerar QR Code"}
@@ -48,12 +49,69 @@ function QRCodeDisplay({ qrCode, onRefresh, isConnecting }) {
       <div className="text-center space-y-1">
         <p className="text-sm font-medium text-foreground">Escaneie com o WhatsApp</p>
         <p className="text-xs text-muted-foreground">
-          Abra o WhatsApp no celular → Menu → Dispositivos conectados → Conectar dispositivo
+          Abra o WhatsApp no celular - Menu - Dispositivos conectados - Conectar dispositivo
         </p>
       </div>
       <Button onClick={onRefresh} variant="outline" size="sm" className="gap-2">
         <RefreshCw className="w-4 h-4" /> Atualizar QR
       </Button>
+    </div>
+  );
+}
+
+function ConnectionConfig({ onSave, onClose }) {
+  const [form, setForm] = useState({
+    api_url: "https://api.evolutionapi.com.br",
+    api_key: "",
+    instance_id: "fiadopro",
+  });
+  
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <p className="text-xs text-blue-700">
+          Use o Evolution API (gratis) para conectar o WhatsApp via Baileys.
+          <br />
+          Acesse: <a href="https://evolution-api.com" target="_blank" rel="noopener noreferrer" className="underline">evolution-api.com</a>
+        </p>
+      </div>
+      
+      <div>
+        <Label>URL da API</Label>
+        <Input
+          value={form.api_url}
+          onChange={(e) => setForm({ ...form, api_url: e.target.value })}
+          placeholder="https://api.evolutionapi.com.br"
+        />
+      </div>
+      
+      <div>
+        <Label>API Key</Label>
+        <Input
+          type="password"
+          value={form.api_key}
+          onChange={(e) => setForm({ ...form, api_key: e.target.value })}
+          placeholder="Sua API Key do Evolution"
+        />
+      </div>
+      
+      <div>
+        <Label>Nome da Instancia</Label>
+        <Input
+          value={form.instance_id}
+          onChange={(e) => setForm({ ...form, instance_id: e.target.value })}
+          placeholder="fiadopro"
+        />
+      </div>
+      
+      <div className="flex gap-2">
+        <Button onClick={onClose} variant="outline" className="flex-1">
+          Cancelar
+        </Button>
+        <Button onClick={() => onSave(form)} className="flex-1 gap-2">
+          <Settings className="w-4 h-4" /> Conectar
+        </Button>
+      </div>
     </div>
   );
 }
@@ -76,13 +134,14 @@ function StatsCard({ icon: Icon, label, value, color = "primary" }) {
 
 export default function WhatsAppConnectionPanel() {
   const queryClient = useQueryClient();
+  const [showConfig, setShowConfig] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
   
-  const { data: session, isLoading: loadingSession } = useQuery({
-    queryKey: ["wa_session"],
+  const { data: waStatus, isLoading } = useQuery({
+    queryKey: ["wa_status"],
     queryFn: async () => {
-      const { data } = await supabase.rpc("wa_get_session", { p_session_id: "DEFAULT_SESSION" });
+      const res = await fetch("/api/whatsapp/connect");
+      const data = await res.json();
       return data;
     },
     refetchInterval: 3000,
@@ -91,82 +150,73 @@ export default function WhatsAppConnectionPanel() {
   const { data: stats } = useQuery({
     queryKey: ["wa_stats"],
     queryFn: async () => {
-      const { data } = await supabase.rpc("wa_get_daily_stats");
+      const res = await fetch("/api/whatsapp/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_stats" }),
+      });
+      const data = await res.json();
       return data;
     },
     refetchInterval: 30000,
   });
   
-  const { data: conversations = [] } = useQuery({
-    queryKey: ["wa_conversations"],
-    queryFn: async () => {
-      const { data } = await supabase.from("wa_conversas").select("*").order("last_message_at", { ascending: false }).limit(50);
-      return data || [];
+  const connectMutation = useMutation({
+    mutationFn: async (config) => {
+      const res = await fetch("/api/whatsapp/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "connect", ...config }),
+      });
+      return res.json();
     },
-    refetchInterval: 10000,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["wa_status"] });
+      if (data.ok) {
+        toast.success("Conexao iniciada!");
+        setShowConfig(false);
+      } else {
+        toast.error(data.error || "Erro ao conectar");
+      }
+    },
   });
   
-  const { data: queue = [] } = useQuery({
-    queryKey: ["wa_queue"],
-    queryFn: async () => {
-      const { data } = await supabase.from("wa_fila_atendimento").select("*").eq("status", "aguardando").order("created_at", { ascending: false });
-      return data || [];
-    },
-    refetchInterval: 5000,
-  });
-  
-  const updateSession = useMutation({
-    mutationFn: async (params) => {
-      const { data, error } = await supabase.rpc("wa_upsert_session", params);
-      if (error) throw error;
-      return data;
+  const toggleMutation = useMutation({
+    mutationFn: async (action) => {
+      const res = await fetch("/api/whatsapp/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wa_session"] });
-      toast.success("Sessão atualizada!");
+      queryClient.invalidateQueries({ queryKey: ["wa_status"] });
     },
   });
   
-  const toggleRobot = useCallback(() => {
-    if (!session) return;
-    updateSession.mutate({
-      p_session_id: session.session_id || "DEFAULT_SESSION",
-      p_robot_active: !session.robot_active,
-    });
-  }, [session, updateSession]);
+  const handleConnect = useCallback((config) => {
+    connectMutation.mutate(config);
+  }, [connectMutation]);
   
-  const toggleHumanMode = useCallback(() => {
-    if (!session) return;
-    updateSession.mutate({
-      p_session_id: session.session_id || "DEFAULT_SESSION",
-      p_human_mode: !session.human_mode,
-    });
-  }, [session, updateSession]);
+  const handleToggleRobot = useCallback(() => {
+    toggleMutation.mutate("toggle_robot");
+  }, [toggleMutation]);
   
-  const startConnection = useCallback(async () => {
-    setIsConnecting(true);
-    try {
-      await supabase.rpc("wa_upsert_session", {
-        p_session_id: "DEFAULT_SESSION",
-        p_status: "aguardando_qr",
-        p_provider: "baileys",
-      });
-      queryClient.invalidateQueries({ queryKey: ["wa_session"] });
-      toast.info("Iniciando conexão Baileys...");
-    } catch (error) {
-      toast.error("Erro ao iniciar conexão");
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [queryClient]);
+  const handleToggleHuman = useCallback(() => {
+    toggleMutation.mutate("toggle_human");
+  }, [toggleMutation]);
   
-  if (loadingSession) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+  
+  const status = waStatus?.status || "desconectado";
+  const qrCode = waStatus?.qr_code || null;
   
   return (
     <div className="space-y-6">
@@ -185,8 +235,8 @@ export default function WhatsAppConnectionPanel() {
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${session?.status === "conectado" ? "bg-green-100" : "bg-muted"}`}>
-              {session?.status === "conectado" ? (
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${status === "conectado" ? "bg-green-100" : "bg-muted"}`}>
+              {status === "conectado" ? (
                 <Wifi className="w-6 h-6 text-green-600" />
               ) : (
                 <WifiOff className="w-6 h-6 text-muted-foreground" />
@@ -195,17 +245,17 @@ export default function WhatsAppConnectionPanel() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-foreground">Status da Conexao</h3>
-                <StatusBadge status={session?.status || "desconectado"} />
+                <StatusBadge status={status} />
               </div>
-              {session?.phone_number && (
+              {waStatus?.phone_number && (
                 <p className="text-sm text-muted-foreground mt-0.5">
                   <Phone className="w-3 h-3 inline mr-1" />
-                  {session.phone_number}
+                  {waStatus.phone_number}
                 </p>
               )}
-              {session?.connected_at && (
+              {waStatus?.connected_at && (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Conectado desde: {new Date(session.connected_at).toLocaleString("pt-BR")}
+                  Conectado desde: {new Date(waStatus.connected_at).toLocaleString("pt-BR")}
                 </p>
               )}
             </div>
@@ -215,22 +265,21 @@ export default function WhatsAppConnectionPanel() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
               <Zap className="w-3 h-3" /> 100% Gratuito
             </span>
-            {(!session?.status || session?.status === "desconectado") && (
-              <Button onClick={startConnection} className="gap-2" disabled={isConnecting}>
-                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                {isConnecting ? "Conectando..." : "Conectar WhatsApp"}
+            {status === "desconectado" && (
+              <Button onClick={() => setShowConfig(true)} className="gap-2">
+                <QrCode className="w-4 h-4" /> Conectar WhatsApp
               </Button>
             )}
           </div>
         </div>
         
-        {session?.status === "aguardando_qr" && (
+        {status === "aguardando_qr" && (
           <div className="border-t border-border pt-4">
-            <QRCodeDisplay qrCode={session.qr_code} onRefresh={startConnection} isConnecting={isConnecting} />
+            <QRCodeDisplay qrCode={qrCode} onRefresh={() => connectMutation.mutate({ action: "connect" })} isConnecting={connectMutation.isPending} />
           </div>
         )}
         
-        {session?.status === "conectado" && (
+        {status === "conectado" && (
           <div className="border-t border-border pt-4">
             <div className="flex items-center gap-2 text-green-600">
               <CheckCircle className="w-5 h-5" />
@@ -248,14 +297,14 @@ export default function WhatsAppConnectionPanel() {
                   <span className="text-sm font-medium text-foreground">Robot Automatico</span>
                 </div>
                 <button
-                  onClick={toggleRobot}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${session?.robot_active ? "bg-green-500" : "bg-gray-300"}`}
+                  onClick={handleToggleRobot}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${waStatus?.robot_active ? "bg-green-500" : "bg-gray-300"}`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${session?.robot_active ? "translate-x-5" : ""}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${waStatus?.robot_active ? "translate-x-5" : ""}`} />
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {session?.robot_active ? "Bot respondendo automaticamente" : "Bot pausado - mensagens nao respondidas"}
+                {waStatus?.robot_active ? "Bot respondendo automaticamente" : "Bot pausado - mensagens nao respondidas"}
               </p>
             </div>
             
@@ -266,81 +315,30 @@ export default function WhatsAppConnectionPanel() {
                   <span className="text-sm font-medium text-foreground">Atendimento Humano</span>
                 </div>
                 <button
-                  onClick={toggleHumanMode}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${session?.human_mode ? "bg-amber-500" : "bg-gray-300"}`}
+                  onClick={handleToggleHuman}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${waStatus?.human_mode ? "bg-amber-500" : "bg-gray-300"}`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${session?.human_mode ? "translate-x-5" : ""}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${waStatus?.human_mode ? "translate-x-5" : ""}`} />
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {session?.human_mode ? "Modo manual - todas as conversas vao para a fila" : "Bot decide quando transferir"}
+                {waStatus?.human_mode ? "Modo manual - todas as conversas vao para a fila" : "Bot decide quando transferir"}
               </p>
             </div>
           </div>
         </div>
       </div>
       
-      {queue.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-5 h-5 text-amber-600" />
-            <h3 className="font-semibold text-amber-800">Fila de Atendimento ({queue.length})</h3>
-          </div>
-          <div className="space-y-2">
-            {queue.map((item) => (
-              <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.customer_name || item.phone_number}</p>
-                  <p className="text-xs text-muted-foreground">{item.phone_number} - {item.reason}</p>
-                </div>
-                <StatusBadge status={item.priority === "urgente" ? "erro" : item.priority === "alta" ? "aguardando_qr" : "conectado"} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard icon={MessageSquare} label="Conversas Hoje" value={stats?.total_conversas || 0} color="primary" />
-        <StatsCard icon={Bot} label="Resolvidas pelo Bot" value={stats?.resolvidas_bot || 0} color="green" />
-        <StatsCard icon={User} label="Transbordos Humanos" value={stats?.transbordo_humano || 0} color="amber" />
-        <StatsCard icon={BarChart3} label="Mensagens Enviadas" value={stats?.mensagens_enviadas || 0} color="blue" />
-      </div>
-      
-      <div className="bg-card rounded-xl border border-border">
-        <div className="p-4 border-b border-border">
-          <h3 className="font-semibold text-foreground">Conversas Recentes</h3>
-        </div>
-        <div className="divide-y divide-border max-h-96 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <p className="p-8 text-center text-muted-foreground">Nenhuma conversa ainda</p>
-          ) : (
-            conversations.map((conv) => (
-              <div key={conv.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                    {conv.customer_name?.charAt(0)?.toUpperCase() || conv.phone_number?.slice(-2)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {conv.customer_name || conv.phone_number}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {conv.phone_number} - {conv.flow_state?.replace(/_/g, " ")}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <StatusBadge status={conv.status === "ativa" ? "conectado" : conv.status === "transbordo_humano" ? "aguardando_qr" : "desconectado"} />
-                  {conv.protocol && (
-                    <span className="text-xs text-muted-foreground font-mono">{conv.protocol}</span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      <Dialog open={showConfig} onOpenChange={setShowConfig}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" /> Configurar WhatsApp
+            </DialogTitle>
+          </DialogHeader>
+          <ConnectionConfig onSave={handleConnect} onClose={() => setShowConfig(false)} />
+        </DialogContent>
+      </Dialog>
       
       <Dialog open={showStats} onOpenChange={setShowStats}>
         <DialogContent className="max-w-lg">
