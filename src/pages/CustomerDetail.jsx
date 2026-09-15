@@ -36,7 +36,7 @@ export default function CustomerDetail() {
     if (!customer?.phone) return;
     const credit = formatCurrency(Math.abs(customer.balance));
     const msg = `Olá ${customer.name}! Você possui um *saldo positivo* de *${credit}* disponível na nossa loja. Esse crédito pode ser utilizado na sua próxima compra. Obrigado! 😊`;
-    sendWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg).catch(() => {});
   };
 
   const sendReceiptWhatsApp = (transaction) => {
@@ -44,7 +44,7 @@ export default function CustomerDetail() {
     const msg = transaction
       ? `*Recibo de ${transaction.type === "compra" ? "Compra" : "Pagamento"}*\n\nCliente: ${customer.name}\nData: ${transaction.date}\nValor: ${formatCurrency(transaction.amount)}\n\n*Saldo devedor: ${formatCurrency(customer.balance || 0)}*`
       : `Olá ${customer.name}, seu saldo devedor atual é de *${formatCurrency(customer.balance || 0)}*. Entre em contato para mais informações.`;
-    sendWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg).catch(() => {});
   };
 
   if (isLoading) {

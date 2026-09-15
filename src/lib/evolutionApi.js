@@ -1,20 +1,60 @@
+import { getApiConfig, setApiConfig } from "@/lib/secureConfig";
+
 const EVOLUTION_API_URL = "https://api.evolutionapi.com.br";
 
 let config = {
-  apiUrl: localStorage.getItem("wa_api_url") || EVOLUTION_API_URL,
-  apiKey: localStorage.getItem("wa_api_key") || "",
-  instance: localStorage.getItem("wa_instance") || "fiadopro",
+  apiUrl: "",
+  apiKey: "",
+  instance: "fiadopro",
 };
+
+let initialized = false;
+
+async function ensureConfig() {
+  if (initialized) return config;
+  try {
+    const saved = await getApiConfig("evolution_api");
+    if (saved && saved.apiKey) {
+      config = { apiUrl: saved.apiUrl || EVOLUTION_API_URL, apiKey: saved.apiKey, instance: saved.instance || "fiadopro" };
+    } else {
+      const local = loadFromLocalStorage();
+      if (local && local.apiKey) {
+        config = local;
+        await setApiConfig("evolution_api", local, "Evolution API configuration");
+      }
+    }
+  } catch {
+    const local = loadFromLocalStorage();
+    if (local) config = local;
+  }
+  initialized = true;
+  return config;
+}
+
+function loadFromLocalStorage() {
+  try {
+    const apiUrl = localStorage.getItem("wa_api_url") || EVOLUTION_API_URL;
+    const apiKey = localStorage.getItem("wa_api_key") || "";
+    const instance = localStorage.getItem("wa_instance") || "fiadopro";
+    if (apiKey) return { apiUrl, apiKey, instance };
+  } catch {}
+  return null;
+}
 
 export function getEvolutionConfig() {
   return { ...config };
 }
 
-export function setEvolutionConfig(apiUrl, apiKey, instance) {
+export async function setEvolutionConfig(apiUrl, apiKey, instance) {
   config = { apiUrl, apiKey, instance };
-  localStorage.setItem("wa_api_url", apiUrl);
-  localStorage.setItem("wa_api_key", apiKey);
-  localStorage.setItem("wa_instance", instance);
+  try {
+    await setApiConfig("evolution_api", config, "Evolution API configuration");
+  } catch {}
+  try {
+    localStorage.setItem("wa_api_url", apiUrl);
+    localStorage.setItem("wa_api_key", apiKey);
+    localStorage.setItem("wa_instance", instance);
+  } catch {}
 }
 
 export function isConfigured() {
@@ -22,6 +62,7 @@ export function isConfigured() {
 }
 
 async function evoFetch(path, options = {}) {
+  await ensureConfig();
   const url = `${config.apiUrl}${path}`;
   const res = await fetch(url, {
     ...options,
@@ -31,12 +72,10 @@ async function evoFetch(path, options = {}) {
       ...options.headers,
     },
   });
-  
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Erro ${res.status}`);
   }
-  
   return res.json();
 }
 
@@ -88,14 +127,10 @@ export async function getConnectionState() {
 export async function sendTextMessage(phone, message) {
   const cleanPhone = phone.replace(/\D/g, "");
   const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
-  
   try {
     const data = await evoFetch(`/message/sendText/${config.instance}`, {
       method: "POST",
-      body: JSON.stringify({
-        number: formattedPhone,
-        text: message,
-      }),
+      body: JSON.stringify({ number: formattedPhone, text: message }),
     });
     return { ok: true, data };
   } catch (error) {
@@ -106,25 +141,17 @@ export async function sendTextMessage(phone, message) {
 export async function sendTyping(phone) {
   const cleanPhone = phone.replace(/\D/g, "");
   const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
-  
   try {
     await evoFetch(`/chat/sendTyping/${config.instance}`, {
       method: "POST",
-      body: JSON.stringify({
-        number: formattedPhone,
-        delay: 1500,
-      }),
+      body: JSON.stringify({ number: formattedPhone, delay: 1500 }),
     });
-  } catch (error) {
-    // Ignorar erro de typing
-  }
+  } catch {}
 }
 
 export async function deleteInstance() {
   try {
-    await evoFetch(`/instance/delete/${config.instance}`, {
-      method: "DELETE",
-    });
+    await evoFetch(`/instance/delete/${config.instance}`, { method: "DELETE" });
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error.message };

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { checkRateLimit, getClientIp } from "./lib/security.js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -163,6 +164,11 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req);
   if (!user) {
     return res.status(401).json({ error: "Não autorizado" });
+  }
+
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`push:${ip}:${user.id}`)) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
   }
 
   try {

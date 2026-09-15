@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit, getClientIp } from "../lib/security.js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -7,6 +8,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`campaign:${ip}`)) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
   }
 
   try {

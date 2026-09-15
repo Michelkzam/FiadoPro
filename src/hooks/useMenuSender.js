@@ -111,15 +111,15 @@ export function useMenuSender() {
 
   const previewMessage = generateMenuMessage(products, storeProfile);
 
-  const configureApi = useCallback((instanceId, token) => {
-    configureWhatsApp(instanceId, token);
+  const configureApi = useCallback(async (instanceId, token) => {
+    await configureWhatsApp(instanceId, token);
     saveConfig({ instanceId, token });
   }, []);
 
   const testConnection = useCallback(async () => {
     const savedConfig = loadConfig();
     if (savedConfig) {
-      configureWhatsApp(savedConfig.instanceId, savedConfig.token);
+      await configureWhatsApp(savedConfig.instanceId, savedConfig.token);
     }
     return checkConnection();
   }, []);
@@ -186,7 +186,7 @@ export function useMenuSender() {
   useEffect(() => {
     const savedConfig = loadConfig();
     if (savedConfig) {
-      configureWhatsApp(savedConfig.instanceId, savedConfig.token);
+      configureWhatsApp(savedConfig.instanceId, savedConfig.token).catch(() => {});
     }
   }, []);
 

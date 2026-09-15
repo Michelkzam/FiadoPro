@@ -29,11 +29,5 @@
         }
       ]
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/campaigns/worker",
-      "schedule": "*/2 * * * *"
-    }
   ]
 }

@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Build output
 dist/
@@ -28,3 +29,17 @@ yarn-error.log*
 supabase/.temp/
 
 .vercel
+
+# Security - Sensitive files
+*.keystore
+*.jks
+*.p12
+*.pfx
+*-release.keystore
+*-debug.keystore
+
+# API Keys and secrets (never commit)
+*.key
+*.pem
+*.secret
+service-account*.json

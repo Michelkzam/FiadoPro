@@ -1,12 +1,15 @@
 import { lazy, Suspense } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClientInstance } from "@/lib/query-client";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import ErrorBoundary from "@/lib/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "./components/Layout";
+
+const isCapacitor = window.location.protocol === 'file:' || window.Capacitor !== undefined;
+const Router = isCapacitor ? HashRouter : BrowserRouter;
 
 const Home = lazy(() => import("./pages/Home"));
 const Customers = lazy(() => import("./pages/Customers"));

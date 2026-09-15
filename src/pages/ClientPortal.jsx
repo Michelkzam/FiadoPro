@@ -188,13 +188,13 @@ export default function ClientPortal() {
         setCustomer((prev) => ({ ...prev, balance: newBalance }));
 
         if (storeProfile?.phone) {
-          sendWhatsApp(storeProfile.phone, `Pedido registrado! Valor: ${formatCurrency(cartTotal)}\nSaldo: ${formatCurrency(newBalance)}`);
+          sendWhatsApp(storeProfile.phone, `Pedido registrado! Valor: ${formatCurrency(cartTotal)}\nSaldo: ${formatCurrency(newBalance)}`).catch(() => {});
         }
       }
 
       if (exceedsLimit && storeProfile?.phone) {
         const msg = `⚠️ Pedido com limite excedido!\n\nCliente: ${customer.name}\nCompra: ${formatCurrency(cartTotal)}\nLimite: ${formatCurrency(customer.credit_limit)}\n\nResponda: ACEITO ou RECUSADO`;
-        sendWhatsApp(storeProfile.phone, msg);
+        sendWhatsApp(storeProfile.phone, msg).catch(() => {});
       }
 
       setCart([]);

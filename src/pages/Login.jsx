@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,9 +71,9 @@ export default function Login() {
         {profile === "cliente" ? (
           <div className="bg-card rounded-xl border border-border shadow-sm p-6 text-center space-y-4">
             <p className="text-sm text-muted-foreground">Acesse o portal do cliente com seu CPF/CNPJ e código de acesso.</p>
-            <a href="/portal">
+            <Link to="/portal">
               <Button className="w-full">Acessar Portal do Cliente</Button>
-            </a>
+            </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border shadow-sm p-6 space-y-4">
@@ -81,8 +82,8 @@ export default function Login() {
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</Button>
             <div className="flex items-center justify-between text-sm">
-              <a href="/forgot-password" className="text-primary hover:underline">Esqueceu a senha?</a>
-              <a href="/register" className="text-primary hover:underline">Criar conta</a>
+              <Link to="/forgot-password" className="text-primary hover:underline">Esqueceu a senha?</Link>
+              <Link to="/register" className="text-primary hover:underline">Criar conta</Link>
             </div>
           </form>
         )}

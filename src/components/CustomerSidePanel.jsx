@@ -12,7 +12,7 @@ export default function CustomerSidePanel({ customerId, onClose }) {
     if (!customer?.phone) return;
     const credit = formatCurrency(Math.abs(customer.balance));
     const msg = `Olá ${customer.name}! Você possui um *saldo positivo* de *${credit}* disponível na nossa loja. Esse crédito pode ser utilizado na sua próxima compra. Obrigado! 😊`;
-    sendWhatsApp(customer.phone, msg);
+    sendWhatsApp(customer.phone, msg).catch(() => {});
   };
 
   const balance = customer?.balance || 0;

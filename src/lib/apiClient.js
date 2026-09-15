@@ -10,12 +10,6 @@ class ApiError extends Error {
 }
 
 const handleSupabaseError = (error) => {
-  console.error("[Supabase Error] full object:", JSON.stringify(error, null, 2));
-  console.error("[Supabase Error] message:", error?.message);
-  console.error("[Supabase Error] code:", error?.code);
-  console.error("[Supabase Error] details:", error?.details);
-  console.error("[Supabase Error] hint:", error?.hint);
-  console.error("[Supabase Error] statusCode:", error?.statusCode);
   const msg = error?.message || error?.details || error?.hint || "Erro na operação";
   throw new ApiError(msg, error?.statusCode || error?.status || 500, error);
 };
@@ -72,7 +66,6 @@ export const auth = {
 
   isAuthenticated: async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    console.log("[Auth] Session exists:", !!session, "user:", session?.user?.id);
     return !!session;
   },
 };
@@ -81,17 +74,12 @@ export const createEntityService = (tableName) => ({
   list: async (sortBy = "created_at", limit = 1000, offset = 0) => {
     const descending = sortBy.startsWith("-");
     const field = sortBy.replace("-", "");
-    console.log("[API] Listing", tableName, "sortBy:", field, "limit:", limit);
     const { data, error } = await supabase
       .from(tableName)
       .select("*")
       .order(field, { ascending: !descending })
       .range(offset, offset + limit - 1);
-    if (error) {
-      console.error("[API] List error:", error);
-      handleSupabaseError(error);
-    }
-    console.log("[API] List result:", data?.length || 0, "records");
+    if (error) handleSupabaseError(error);
     return data || [];
   },
 
@@ -122,10 +110,8 @@ export const createEntityService = (tableName) => ({
   create: async (record) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.error("[API] Create abortado: sessão não encontrada");
       throw new ApiError("Sessão expirada. Faça login novamente.", 401);
     }
-    console.log("[API] Creating record in", tableName, ":", JSON.stringify(record, null, 2));
 
     const { data, error, status, statusText } = await supabase
       .from(tableName)
@@ -134,11 +120,9 @@ export const createEntityService = (tableName) => ({
       .single();
     
     if (error) {
-      console.error("[API] Create error status:", status, statusText);
-      console.error("[API] Create error:", JSON.stringify(error, null, 2));
+      console.error(`[API] Create error in ${tableName}:`, error.message);
       handleSupabaseError(error);
     }
-    console.log("[API] Create success:", data);
     return data;
   },
 

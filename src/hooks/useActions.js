@@ -103,7 +103,7 @@ Nós do ${storeName} agradecemos a preferência
         }
       }
 
-      sendWhatsApp(customer.phone, msg);
+      sendWhatsApp(customer.phone, msg).catch(() => {});
     },
     [customer]
   );
@@ -143,7 +143,7 @@ export function useOrderActions() {
           `*Dívida anterior:* ${prevFmt}\n` +
           `*Total em débito:* ${newFmt}\n\n` +
           `Qualquer dúvida, entre em contato. 😊`;
-        sendWhatsApp(order.customer_phone, msg);
+        sendWhatsApp(order.customer_phone, msg).catch(() => {});
       }
 
       return true;
@@ -164,12 +164,11 @@ export function useOrderActions() {
         };
 
         if (messages[status]) {
-          sendWhatsApp(customer.phone, messages[status]);
+          sendWhatsApp(customer.phone, messages[status]).catch(() => {});
         }
       }
       return true;
     } catch (error) {
-      console.error("Error updating order status:", error);
       throw error;
     }
   }, []);

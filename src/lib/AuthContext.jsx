@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
       setAppPublicSettings({ appName: "FiadoPro" });
       setIsLoadingPublicSettings(false);
     } catch (error) {
-      console.error("Unexpected error:", error);
       setAuthError({ type: "unknown", message: error.message || "An unexpected error occurred" });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
@@ -50,7 +49,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
-      console.error("User auth check failed:", error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -67,8 +65,8 @@ export const AuthProvider = ({ children }) => {
     setAuthChecked(false);
     try {
       await db.auth.logout();
-    } catch (e) {
-      console.warn("Erro no logout:", e);
+    } catch {
+      // Logout may fail if session already expired - safe to ignore
     }
     if (shouldRedirect) {
       window.location.href = "/login";

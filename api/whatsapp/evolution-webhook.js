@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { verifyWebhookSignature, checkRateLimit, getClientIp, handleCors, applySecurityHeaders } from "../lib/security.js";
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -187,13 +188,21 @@ async function process(phone, text) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  
+  handleCors(res);
+  applySecurityHeaders(res);
+
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  
+
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`webhook:${ip}`)) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
+  }
+
+  if (!verifyWebhookSignature(req)) {
+    return res.status(401).json({ error: "Invalid webhook signature" });
+  }
+
   try {
     const body = req.body;
     

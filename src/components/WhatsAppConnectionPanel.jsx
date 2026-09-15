@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, CheckCircle, Loader2, Zap, Settings, Terminal, Copy, Check } from "lucide-react";
+import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, CheckCircle, Loader2, Zap, Settings, Copy, Check, AlertTriangle } from "lucide-react";
 
 function StatusBadge({ status }) {
   const cfg = {
@@ -52,8 +52,8 @@ function SetupWizard({ onClose }) {
       <div className="space-y-2 text-sm text-muted-foreground">
         <p><strong>1.</strong> Abra o terminal na pasta do projeto</p>
         <p><strong>2.</strong> Execute o comando acima</p>
-        <p><strong>3.</strong> Escaneie o QR Code que aparecer no terminal</p>
-        <p><strong>4.</strong> Volte aqui e atualize a pagina</p>
+        <p><strong>3.</strong> Escaneie o QR Code que aparecer</p>
+        <p><strong>4.</strong> Volte aqui e clique "Testar Conexao"</p>
       </div>
 
       <Button onClick={onClose} className="w-full">Entendi</Button>
@@ -65,32 +65,34 @@ export default function WhatsAppConnectionPanel() {
   const [showSetup, setShowSetup] = useState(false);
   const [serverUrl, setServerUrl] = useState("http://localhost:3001");
 
-  const { data: status, isLoading } = useQuery({
+  const { data: status, isLoading, error: statusError } = useQuery({
     queryKey: ["wa_status", serverUrl],
     queryFn: async () => {
       try {
-        const res = await fetch(`${serverUrl}/status`);
+        const res = await fetch(`${serverUrl}/status`, { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) throw new Error("Server error");
         return res.json();
       } catch {
-        return { status: "desconectado" };
+        return { status: "desconectado", offline: true };
       }
     },
-    refetchInterval: 3000,
+    refetchInterval: 5000,
+    retry: 1,
   });
 
-  const { data: qrData, isLoading: loadingQR, refetch } = useQuery({
+  const { data: qrData, refetch } = useQuery({
     queryKey: ["wa_qr", serverUrl],
     queryFn: async () => {
       try {
-        const res = await fetch(`${serverUrl}/qr`);
+        const res = await fetch(`${serverUrl}/qr`, { signal: AbortSignal.timeout(3000) });
         const data = await res.json();
         return data.qr || null;
       } catch {
         return null;
       }
     },
-    refetchInterval: 2000,
-    enabled: status?.status !== "conectado",
+    refetchInterval: 3000,
+    enabled: status?.status !== "conectado" && status?.status !== "desconectado",
   });
 
   if (isLoading) {
@@ -102,6 +104,7 @@ export default function WhatsAppConnectionPanel() {
   }
 
   const st = status?.status || "desconectado";
+  const isOffline = status?.offline;
 
   return (
     <div className="space-y-6">
@@ -112,23 +115,31 @@ export default function WhatsAppConnectionPanel() {
         </div>
       </div>
 
-      {st === "desconectado" && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+      {isOffline && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-              <Terminal className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Inicie o servidor WhatsApp</h3>
+              <h3 className="font-semibold text-foreground">Servidor offline</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Abra o terminal e execute o comando abaixo. O QR Code vai aparecer la.
+                O servidor WhatsApp nao foi encontrado. Execute o comando abaixo no terminal:
               </p>
               <div className="bg-gray-900 rounded-lg p-3 mt-3 flex items-center">
                 <code className="text-green-400 text-sm flex-1">cd server && npm install && npm start</code>
+                <Button onClick={() => { navigator.clipboard.writeText("cd server && npm install && npm start"); toast.success("Copiado!"); }} variant="ghost" size="sm">
+                  <Copy className="w-4 h-4 text-gray-400" />
+                </Button>
               </div>
-              <Button onClick={() => setShowSetup(true)} variant="outline" size="sm" className="mt-3 gap-2">
-                <Settings className="w-4 h-4" /> Ver instrucoes completas
-              </Button>
+              <div className="flex gap-2 mt-3">
+                <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
+                  <RefreshCw className="w-4 h-4" /> Testar Conexao
+                </Button>
+                <Button onClick={() => setShowSetup(true)} variant="ghost" size="sm" className="gap-2">
+                  <Settings className="w-4 h-4" /> Instrucoes
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -172,7 +183,7 @@ export default function WhatsAppConnectionPanel() {
             <div className="flex flex-col items-center py-12 space-y-4">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Aguardando QR Code do servidor...</p>
-              <p className="text-xs text-muted-foreground">Execute: cd server && npm start</p>
+              <p className="text-xs text-muted-foreground">Certifique-se que o servidor esta rodando</p>
             </div>
           </div>
         )}
@@ -210,8 +221,8 @@ export default function WhatsAppConnectionPanel() {
         <h3 className="font-semibold text-foreground mb-4">Como Funciona</h3>
         <div className="space-y-3">
           {[
-            { n: "1", t: "Execute o servidor", d: "cd server && npm start" },
-            { n: "2", t: "Escaneie o QR Code", d: "WhatsApp - Dispositivos conectados" },
+            { n: "1", t: "Execute o servidor", d: "cd server && npm install && npm start" },
+            { n: "2", t: "Escaneie o QR Code", d: "WhatsApp > Dispositivos conectados > Conectar" },
             { n: "3", t: "Pronto!", d: "Cliente envia msg, bot responde, pedido registrado" },
           ].map(i => (
             <div key={i.n} className="flex items-start gap-3">

@@ -66,7 +66,7 @@ export default function PaymentDialog({ customer, onClose, onSuccess }) {
           saldoMsg = `Saldo restante em aberto: *${formatCurrency(finalBalance)}*.`;
         }
         const msg = `Olá ${customer.name}! Recebemos seu pagamento de *${formatCurrency(total)}*.\n\n${saldoMsg}\n\nObrigado!`;
-        sendWhatsApp(customer.phone, msg);
+        sendWhatsApp(customer.phone, msg).catch(() => {});
       }
 
       toast.success("Pagamento registrado!");

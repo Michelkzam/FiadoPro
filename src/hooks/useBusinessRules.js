@@ -99,7 +99,7 @@ export function useAuditLog() {
       p_old_data: oldData,
       p_new_data: newData,
     });
-    if (error) console.error("Audit log error:", error);
+    if (error) throw error;
   }, []);
 
   return { log };

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Users, ShoppingCart, Package, AlertTriangle, TrendingUp, DollarSign, ArrowRight, Table, ClipboardList, Send } from "lucide-react";
+import { Users, ShoppingCart, Package, AlertTriangle, TrendingUp, DollarSign, ArrowRight, Table, ClipboardList, Send, MessageCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useCustomers, useOrders, useProducts, useTransactions, usePendingOrders } from "@/hooks/useQueries";
 import { useCashflow, useDelinquentCustomers, useMonthlyComparison } from "@/hooks/useReports";
 import { formatCurrency } from "@/lib/constants";
@@ -78,6 +79,21 @@ export default function Home() {
   const { data: delinquent = [] } = useDelinquentCustomers(30);
   const { data: monthlyComparison } = useMonthlyComparison();
 
+  const { data: waStatus } = useQuery({
+    queryKey: ["wa_status_dashboard"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("http://localhost:3001/status", { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) return { status: "offline" };
+        return res.json();
+      } catch {
+        return { status: "offline" };
+      }
+    },
+    refetchInterval: 10000,
+    retry: 1,
+  });
+
   const totalDebt = customers.reduce((s, c) => s + Math.max(0, c.balance || 0), 0);
   const totalCredit = customers.reduce((s, c) => s + Math.abs(Math.min(0, c.balance || 0)), 0);
 
@@ -112,7 +128,7 @@ export default function Home() {
         <StatCard icon={Users} title="Clientes Ativos" value={customers.filter((c) => c.status === "ativo").length} link="/clientes" colorKey="purple" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium text-foreground">Hoje</p>
@@ -169,6 +185,29 @@ export default function Home() {
             <div className="text-center py-6 text-muted-foreground text-sm">Sem dados</div>
           )}
         </div>
+
+        <Link to="/whatsapp-ai" className="block">
+          <div className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-all h-full">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${waStatus?.status === "conectado" ? "" : "bg-gray-100"}`}
+                style={waStatus?.status === "conectado" ? { backgroundColor: "#f0fdf4" } : {}}>
+                <MessageCircle className="w-5 h-5" style={{ color: waStatus?.status === "conectado" ? "#22c55e" : "#9ca3af" }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">WhatsApp Bot</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: waStatus?.status === "conectado" ? "#22c55e" : "#ef4444" }} />
+                  <span className="text-xs" style={{ color: waStatus?.status === "conectado" ? "#16a34a" : "#dc2626" }}>
+                    {waStatus?.status === "conectado" ? "Online" : "Offline"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {waStatus?.status === "conectado" ? "Bot ativo e respondendo" : "Execute: cd server && npm start"}
+            </p>
+          </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

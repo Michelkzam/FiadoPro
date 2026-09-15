@@ -1,0 +1,274 @@
+openapi: 3.1.0
+info:
+  title: FiadoPro API
+  description: |
+    API RESTful para o sistema FiadoPro - Gestão de comércios com crédito/fiado.
+    
+    ## Autenticacao
+    - **Webhooks**: Verificacao via `X-Webhook-Signature` (HMAC SHA-256)
+    - **Endpoints autenticados**: Bearer token JWT do Supabase Auth
+    - **Rate Limiting**: 30 requests/min por IP
+  version: 1.0.0
+  contact:
+    name: FiadoPro
+    url: https://fiadopro.vercel.app
+
+servers:
+  - url: https://fiadopro.vercel.app
+    url: http://localhost:3000
+
+paths:
+  /api/whatsapp/webhook:
+    post:
+      summary: Webhook WhatsApp (Evolution API)
+      description: |
+        Recebe eventos do WhatsApp via Evolution API.
+        Eventos suportados: `messages.upsert`, `connection.update`, `qrcode.updated`.
+      security:
+        - WebhookSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  enum: [messages.upsert, connection.update, qrcode.updated]
+                data:
+                  type: object
+                instance:
+                  type: string
+      responses:
+        '200':
+          description: Evento processado
+        '401':
+          description: Assinatura invalida
+        '429':
+          description: Rate limit excedido
+
+  /api/whatsapp/evolution-webhook:
+    post:
+      summary: Webhook WhatsApp (variante simplificada)
+      description: Variante simplificada do webhook sem envio ativo de respostas.
+      security:
+        - WebhookSignature: []
+      responses:
+        '200':
+          description: Evento processado
+
+  /api/whatsapp/agent-webhook:
+    post:
+      summary: Agente WhatsApp com envio ativo
+      description: |
+        Webhook que processa mensagens e envia respostas automaticamente.
+        Respeita flags `robot_active` e `human_mode`.
+      security:
+        - WebhookSignature: []
+      responses:
+        '200':
+          description: Mensagem processada e enviada
+
+  /api/whatsapp/connect:
+    get:
+      summary: Status da conexao WhatsApp
+      description: Retorna status, QR code e configuracoes da sessao.
+      responses:
+        '200':
+          description: Status da sessao
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppStatus'
+    post:
+      summary: Gerenciar conexao WhatsApp
+      description: |
+        Actions disponiveis:
+        - `connect`: Criar instancia e obter QR code
+        - `disconnect`: Desconectar sessao
+        - `toggle_robot`: Ativar/desativar respostas automaticas
+        - `toggle_human`: Alternar modo humano/bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [connect, disconnect, toggle_robot, toggle_human]
+                api_url:
+                  type: string
+                api_key:
+                  type: string
+                instance_id:
+                  type: string
+      responses:
+        '200':
+          description: Acao executada
+        '400':
+          description: Acao invalida
+
+  /api/whatsapp/broadcast:
+    post:
+      summary: Enviar cardapio em massa
+      description: Envia mensagem de cardapio para destinatarios de um canal WhatsApp.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                canal_id:
+                  type: string
+                  format: uuid
+                custom_message:
+                  type: string
+      responses:
+        '200':
+          description: Envio concluido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastResult'
+        '401':
+          description: Nao autorizado
+
+  /api/campaigns/start:
+    post:
+      summary: Iniciar campanha
+      description: |
+        Inicia uma campanha de marketing. Cria itens na fila de envio
+        para cada destinatario/canal.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [campanha_id]
+              properties:
+                campanha_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Campanha iniciada
+        '400':
+          description: Parametros invalidos
+
+  /api/campaigns/worker:
+    get:
+      summary: Processar fila de envio (cron)
+      description: Processa itens pendentes na fila de envio de campanhas.
+      responses:
+        '200':
+          description: Resultado do processamento
+    post:
+      summary: Processar fila de envio (manual)
+      description: Trigger manual para processar a fila.
+      responses:
+        '200':
+          description: Resultado do processamento
+
+  /api/push:
+    post:
+      summary: Enviar notificacao push
+      description: Envia notificacao Web Push para dispositivos inscritos.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+                url:
+                  type: string
+                user_id:
+                  type: string
+                  format: uuid
+                tag:
+                  type: string
+      responses:
+        '200':
+          description: Notificacao enviada
+        '401':
+          description: Nao autorizado
+
+  /api/channels:
+    get:
+      summary: Status do modulo de canais
+      description: Retorna status do modulo de integracao multi-plataforma.
+      responses:
+        '200':
+          description: Modulo carregado
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT do Supabase Auth
+    WebhookSignature:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: |
+        Assinatura HMAC SHA-256 do payload.
+        Formato: sha256={hex_digest}
+        Configure WEBHOOK_SECRET no .env
+
+  schemas:
+    WhatsAppStatus:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        status:
+          type: string
+          enum: [conectado, desconectado, aguardando_qr, erro]
+        qr_code:
+          type: string
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        robot_active:
+          type: boolean
+        human_mode:
+          type: boolean
+        provider:
+          type: string
+
+    BroadcastResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total:
+          type: integer
+        sucesso:
+          type: integer
+        falha:
+          type: integer
+        message:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string

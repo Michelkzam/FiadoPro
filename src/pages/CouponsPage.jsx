@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Tag, Percent, DollarSign, Copy, Check } from "lucide-react";
 import { useCoupons } from "@/hooks/useFeatures";
+import { formatCurrency } from "@/lib/constants";
 import { toast } from "sonner";
 
 export default function CouponsPage() {
@@ -203,6 +204,4 @@ export default function CouponsPage() {
   );
 }
 
-function formatCurrency(v) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-}
+

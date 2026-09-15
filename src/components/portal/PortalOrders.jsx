@@ -21,7 +21,7 @@ export default function PortalOrders({ orders, customer, storeProfile }) {
   const handlePay = (order) => {
     if (!storeProfile?.phone) return;
     const msg = `Olá! Sou ${customer.name} e gostaria de pagar o pedido: "${order.description}" no valor de ${formatCurrency(order.amount)}.`;
-    sendWhatsApp(storeProfile.phone, msg);
+    sendWhatsApp(storeProfile.phone, msg).catch(() => {});
   };
 
   return (

@@ -8,7 +8,7 @@ import {
   Bot, Send, Copy, Check, DollarSign, Clock, Beer, PartyPopper,
   MessageCircle, Sparkles, RefreshCw
 } from "lucide-react";
-import { useCustomers, useStoreProfile } from "@/hooks/useQueries";
+import { useCustomers, useStoreProfile, useActiveProducts } from "@/hooks/useQueries";
 import { formatCurrency } from "@/lib/constants";
 import { sendWhatsApp } from "@/lib/sendWhatsApp";
 
@@ -620,7 +620,7 @@ export default function WhatsAppCRM() {
       toast.error("Cliente sem telefone cadastrado");
       return;
     }
-    sendWhatsApp(customerPhone, content);
+    sendWhatsApp(customerPhone, content).catch(() => {});
     toast.success("Mensagem enviada via WhatsApp!");
   };
 

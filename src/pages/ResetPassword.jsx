@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ export default function ResetPassword() {
           <h1 className="text-2xl font-bold text-foreground">Link Inválido</h1>
           <div className="bg-card rounded-xl border border-border p-6 space-y-3">
             <p className="text-sm text-destructive">O link de redefinição de senha é inválido ou expirou.</p>
-            <a href="/forgot-password" className="text-primary hover:underline text-sm">Solicitar novo link</a>
+            <Link to="/forgot-password" className="text-primary hover:underline text-sm">Solicitar novo link</Link>
           </div>
         </div>
       </div>
