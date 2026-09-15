@@ -5,7 +5,7 @@
 -- Tabela para armazenar configurações de API de forma segura
 -- Substitui o localStorage para credenciais sensíveis
 CREATE TABLE IF NOT EXISTS api_config (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   config_key TEXT NOT NULL UNIQUE,
   config_value JSONB NOT NULL DEFAULT '{}',
   description TEXT,
