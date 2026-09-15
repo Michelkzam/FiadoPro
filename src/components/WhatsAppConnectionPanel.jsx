@@ -33,27 +33,44 @@ function SetupWizard({ onClose }) {
   return (
     <div className="space-y-4">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <p className="text-sm text-green-800 font-medium">100% Gratuito e Pra Sempre</p>
+        <p className="text-sm text-green-800 font-medium">100% Gratuito</p>
         <p className="text-xs text-green-700 mt-1">
-          Roda no seu computador. Sem conta, sem mensalidade, sem limite.
+          O bot roda no seu computador. Sem custo, sem limite de mensagens.
         </p>
       </div>
 
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Como iniciar:</p>
+        <div className="flex items-start gap-3">
+          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-green-600">1</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            <strong>Windows:</strong> Clique duas vezes no arquivo <code className="bg-muted px-1 rounded">iniciar.bat</code>
+          </p>
+        </div>
+        <div className="flex items-start gap-3">
+          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-green-600">2</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Escaneie o QR Code que aparecer no navegador</p>
+        </div>
+        <div className="flex items-start gap-3">
+          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-green-600">3</span>
+          </div>
+          <p className="text-sm text-muted-foreground">Pronto! O bot esta ativo e respondendo</p>
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <p className="text-sm font-medium">Abra o terminal e execute:</p>
+        <p className="text-xs text-muted-foreground">Ou via terminal:</p>
         <div className="bg-gray-900 rounded-lg p-3 flex items-center justify-between">
-          <code className="text-green-400 text-sm">cd server && npm install && npm start</code>
+          <code className="text-green-400 text-xs">cd server && npm install && npm start</code>
           <Button onClick={copyCmd} variant="ghost" size="sm" className="ml-2">
             {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
           </Button>
         </div>
-      </div>
-
-      <div className="space-y-2 text-sm text-muted-foreground">
-        <p><strong>1.</strong> Abra o terminal na pasta do projeto</p>
-        <p><strong>2.</strong> Execute o comando acima</p>
-        <p><strong>3.</strong> Escaneie o QR Code que aparecer</p>
-        <p><strong>4.</strong> Volte aqui e clique "Testar Conexao"</p>
       </div>
 
       <Button onClick={onClose} className="w-full">Entendi</Button>
@@ -122,16 +139,19 @@ export default function WhatsAppConnectionPanel() {
               <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Servidor offline</h3>
+              <h3 className="font-semibold text-foreground">Servidor WhatsApp offline</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                O servidor WhatsApp nao foi encontrado. Execute o comando abaixo no terminal:
+                Para conectar o WhatsApp, inicie o servidor. Clique no botao abaixo para copiar o comando:
               </p>
               <div className="bg-gray-900 rounded-lg p-3 mt-3 flex items-center">
                 <code className="text-green-400 text-sm flex-1">cd server && npm install && npm start</code>
-                <Button onClick={() => { navigator.clipboard.writeText("cd server && npm install && npm start"); toast.success("Copiado!"); }} variant="ghost" size="sm">
+                <Button onClick={() => { navigator.clipboard.writeText("cd server && npm install && npm start"); toast.success("Comando copiado! Cole no terminal."); }} variant="ghost" size="sm">
                   <Copy className="w-4 h-4 text-gray-400" />
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Ou execute o arquivo <strong>iniciar.bat</strong> na pasta do projeto (Windows).
+              </p>
               <div className="flex gap-2 mt-3">
                 <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
                   <RefreshCw className="w-4 h-4" /> Testar Conexao
@@ -221,9 +241,9 @@ export default function WhatsAppConnectionPanel() {
         <h3 className="font-semibold text-foreground mb-4">Como Funciona</h3>
         <div className="space-y-3">
           {[
-            { n: "1", t: "Execute o servidor", d: "cd server && npm install && npm start" },
+            { n: "1", t: "Inicie o servidor", d: "Execute iniciar.bat ou use o terminal" },
             { n: "2", t: "Escaneie o QR Code", d: "WhatsApp > Dispositivos conectados > Conectar" },
-            { n: "3", t: "Pronto!", d: "Cliente envia msg, bot responde, pedido registrado" },
+            { n: "3", t: "Pronto!", d: "Cliente envia msg, bot responde automaticamente" },
           ].map(i => (
             <div key={i.n} className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">

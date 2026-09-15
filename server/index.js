@@ -345,14 +345,30 @@ update();setInterval(update,2000);
 });
 
 app.get("/qr", (req, res) => res.json({ qr: qrCode }));
-app.get("/status", (req, res) => res.json({ status: connectionStatus }));
+app.get("/status", (req, res) => res.json({ status: connectionStatus, phone: sock?.user?.id?.replace(/:.*@/, "@")?.split("@")[0] || null }));
 
-app.listen(PORT, () => {
+app.post("/api/send", express.json(), async (req, res) => {
+  try {
+    const { phone, message } = req.body;
+    if (!phone || !message) return res.status(400).json({ error: "phone and message required" });
+    if (connectionStatus !== "conectado" || !sock) return res.status(503).json({ error: "WhatsApp not connected" });
+
+    const clean = phone.replace(/\D/g, "");
+    const full = clean.startsWith("55") ? clean : `55${clean}`;
+    await sock.sendMessage(`${full}@s.whatsapp.net`, { text: message });
+    res.json({ success: true, method: "baileys" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(PORT, async () => {
   console.log("========================================");
-  console.log("  FiadoPro WhatsApp Bot (100% Gratuito)");
+  console.log("  FiadoPro WhatsApp Bot");
   console.log("========================================");
   console.log(`  Porta: ${PORT}`);
   console.log(`  Status: http://localhost:${PORT}/status`);
+  console.log(`  QR Code: http://localhost:${PORT}/`);
   console.log("");
-  connectWhatsApp();
+  await connectWhatsApp();
 });

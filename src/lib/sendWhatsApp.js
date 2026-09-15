@@ -1,22 +1,36 @@
-import { sendTextMessage, getConfig } from "@/services/whatsappApi";
-
 const sanitizePhone = (phone) => (phone || "").replace(/\D/g, "");
+const BAILEYS_SERVER = "http://localhost:3001";
 
 export const sendWhatsApp = async (phone, message) => {
   const clean = sanitizePhone(phone);
   if (!clean) return { method: "skipped", success: false, reason: "no_phone" };
 
-  const { instanceId, token } = getConfig();
-
-  if (instanceId && token) {
-    try {
-      await sendTextMessage(clean, message);
-      return { method: "api", success: true };
-    } catch (error) {
-      console.warn("Z-API falhou, abrindo WhatsApp:", error.message);
+  try {
+    const res = await fetch(`${BAILEYS_SERVER}/api/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: clean, message }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) return { method: "baileys", success: true };
     }
+  } catch {
+    // Server offline, try next method
+  }
+
+  try {
+    const { sendTextMessage, getConfig } = await import("@/services/whatsappApi");
+    const { instanceId, token } = getConfig();
+    if (instanceId && token) {
+      await sendTextMessage(clean, message);
+      return { method: "zapi", success: true };
+    }
+  } catch {
+    // Z-API not configured
   }
 
   window.open(`https://wa.me/55${clean}?text=${encodeURIComponent(message)}`, "_blank");
-  return { method: "manual", success: true, note: "WhatsApp API indisponível. Mensagem aberta manualmente." };
+  return { method: "manual", success: true };
 };
