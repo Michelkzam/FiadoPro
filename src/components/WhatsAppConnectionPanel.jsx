@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, CheckCircle, Loader2, Zap, Settings, Copy, Check, AlertTriangle } from "lucide-react";
+import { Wifi, WifiOff, QrCode, Bot, User, RefreshCw, CheckCircle, Loader2, Zap, Power } from "lucide-react";
 
 function StatusBadge({ status }) {
   const cfg = {
@@ -20,75 +18,17 @@ function StatusBadge({ status }) {
   );
 }
 
-function SetupWizard({ onClose }) {
-  const [copied, setCopied] = useState(false);
-
-  const copyCmd = () => {
-    navigator.clipboard.writeText("cd server && npm install && npm start");
-    setCopied(true);
-    toast.success("Comando copiado!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <p className="text-sm text-green-800 font-medium">100% Gratuito</p>
-        <p className="text-xs text-green-700 mt-1">
-          O bot roda no seu computador. Sem custo, sem limite de mensagens.
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        <p className="text-sm font-medium">Como configurar:</p>
-        <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-green-600">1</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Execute <code className="bg-muted px-1 rounded">instalar.bat</code> <strong>uma vez so</strong> (inicia automatico com o Windows)
-          </p>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-green-600">2</span>
-          </div>
-          <p className="text-sm text-muted-foreground">Escaneie o QR Code que aparecer no navegador</p>
-        </div>
-        <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-green-600">3</span>
-          </div>
-          <p className="text-sm text-muted-foreground">Pronto! Nunca mais precisa clicar em nada</p>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">Ou via terminal:</p>
-        <div className="bg-gray-900 rounded-lg p-3 flex items-center justify-between">
-          <code className="text-green-400 text-xs">cd server && npm install && npm start</code>
-          <Button onClick={copyCmd} variant="ghost" size="sm" className="ml-2">
-            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
-          </Button>
-        </div>
-      </div>
-
-      <Button onClick={onClose} className="w-full">Entendi</Button>
-    </div>
-  );
-}
+const getServerUrl = () => {
+  const { hostname, port } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") return "";
+  return "http://localhost:3001";
+};
 
 export default function WhatsAppConnectionPanel() {
-  const [showSetup, setShowSetup] = useState(false);
-
-  const getServerUrl = () => {
-    if (window.location.port === "5173" || window.location.port === "3000") return "";
-    return "http://localhost:3001";
-  };
   const serverUrl = getServerUrl();
 
-  const { data: status, isLoading, error: statusError } = useQuery({
-    queryKey: ["wa_status", serverUrl],
+  const { data: status, isLoading } = useQuery({
+    queryKey: ["wa_status"],
     queryFn: async () => {
       try {
         const res = await fetch(`${serverUrl}/status`, { signal: AbortSignal.timeout(3000) });
@@ -102,8 +42,8 @@ export default function WhatsAppConnectionPanel() {
     retry: 1,
   });
 
-  const { data: qrData, refetch } = useQuery({
-    queryKey: ["wa_qr", serverUrl],
+  const { data: qrData, refetch: refetchQr } = useQuery({
+    queryKey: ["wa_qr"],
     queryFn: async () => {
       try {
         const res = await fetch(`${serverUrl}/qr`, { signal: AbortSignal.timeout(3000) });
@@ -114,7 +54,22 @@ export default function WhatsAppConnectionPanel() {
       }
     },
     refetchInterval: 3000,
-    enabled: status?.status !== "conectado" && status?.status !== "desconectado",
+    enabled: status?.status === "aguardando_qr",
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${serverUrl}/status`, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error("Servidor offline");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Servidor encontrado! Aguardando QR Code...");
+      refetchQr();
+    },
+    onError: () => {
+      toast.error("Servidor WhatsApp não encontrado. Execute npm run dev primeiro.");
+    },
   });
 
   if (isLoading) {
@@ -130,45 +85,10 @@ export default function WhatsAppConnectionPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">WhatsApp AI Agent</h2>
-          <p className="text-sm text-muted-foreground">Atendimento automatico via WhatsApp</p>
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-foreground">WhatsApp AI Agent</h2>
+        <p className="text-sm text-muted-foreground">Atendimento automatico via WhatsApp</p>
       </div>
-
-      {isOffline && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Servidor WhatsApp offline</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Para conectar o WhatsApp, inicie o servidor. Clique no botao abaixo para copiar o comando:
-              </p>
-              <div className="bg-gray-900 rounded-lg p-3 mt-3 flex items-center">
-                <code className="text-green-400 text-sm flex-1">cd server && npm install && npm start</code>
-                <Button onClick={() => { navigator.clipboard.writeText("cd server && npm install && npm start"); toast.success("Comando copiado! Cole no terminal."); }} variant="ghost" size="sm">
-                  <Copy className="w-4 h-4 text-gray-400" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Para inicio automatico com o Windows, execute <strong>instalar.bat</strong> (uma vez so).
-              </p>
-              <div className="flex gap-2 mt-3">
-                <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
-                  <RefreshCw className="w-4 h-4" /> Testar Conexao
-                </Button>
-                <Button onClick={() => setShowSetup(true)} variant="ghost" size="sm" className="gap-2">
-                  <Settings className="w-4 h-4" /> Instrucoes
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
@@ -189,35 +109,55 @@ export default function WhatsAppConnectionPanel() {
           </span>
         </div>
 
-        {st === "aguardando_qr" && qrData && (
+        {isOffline && (
           <div className="border-t border-border pt-4">
             <div className="flex flex-col items-center py-6 space-y-4">
-              <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-lg">
-                <img src={qrData} alt="QR Code" className="w-72 h-72 object-contain" />
-              </div>
-              <p className="text-xs text-muted-foreground">Escaneie com o WhatsApp - Dispositivos conectados</p>
-              <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
-                <RefreshCw className="w-4 h-4" /> Atualizar
+              <p className="text-sm text-muted-foreground">Servidor WhatsApp não encontrado</p>
+              <Button onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending} className="gap-2">
+                {connectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
+                Conectar
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Execute <code className="bg-muted px-1 rounded">npm run dev</code> ou <code className="bg-muted px-1 rounded">iniciar.bat</code> primeiro
+              </p>
             </div>
           </div>
         )}
 
-        {st === "aguardando_qr" && !qrData && (
+        {st === "aguardando_qr" && (
           <div className="border-t border-border pt-4">
-            <div className="flex flex-col items-center py-12 space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Aguardando QR Code do servidor...</p>
-              <p className="text-xs text-muted-foreground">Certifique-se que o servidor esta rodando</p>
+            <div className="flex flex-col items-center py-6 space-y-4">
+              {qrData ? (
+                <>
+                  <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-lg">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`}
+                      alt="QR Code"
+                      className="w-64 h-64 object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Escaneie com o WhatsApp - Dispositivos conectados</p>
+                  <Button onClick={() => refetchQr()} variant="outline" size="sm" className="gap-2">
+                    <RefreshCw className="w-4 h-4" /> Atualizar
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center py-6 space-y-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Aguardando QR Code...</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {st === "conectado" && (
           <div className="border-t border-border pt-4">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle className="w-5 h-5" />
-              <span className="text-sm font-medium">WhatsApp conectado! Bot respondendo automaticamente.</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="w-5 h-5" />
+                <span className="text-sm font-medium">WhatsApp conectado! Bot respondendo automaticamente.</span>
+              </div>
             </div>
           </div>
         )}
@@ -246,9 +186,9 @@ export default function WhatsAppConnectionPanel() {
         <h3 className="font-semibold text-foreground mb-4">Como Funciona</h3>
         <div className="space-y-3">
           {[
-            { n: "1", t: "Execute instalar.bat", d: "Uma vez so - configura inicio automatico" },
+            { n: "1", t: "Execute npm run dev", d: "Ou clique duas vezes em iniciar.bat" },
             { n: "2", t: "Escaneie o QR Code", d: "WhatsApp > Dispositivos conectados > Conectar" },
-            { n: "3", t: "Pronto!", d: "Bot ativo 24/7, sem clicar em nada" },
+            { n: "3", t: "Pronto!", d: "Cliente envia msg, bot responde automaticamente" },
           ].map(i => (
             <div key={i.n} className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
@@ -262,15 +202,6 @@ export default function WhatsAppConnectionPanel() {
           ))}
         </div>
       </div>
-
-      <Dialog open={showSetup} onOpenChange={setShowSetup}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Configurar WhatsApp</DialogTitle>
-          </DialogHeader>
-          <SetupWizard onClose={() => setShowSetup(false)} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
