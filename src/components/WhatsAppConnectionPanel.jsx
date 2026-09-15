@@ -80,7 +80,12 @@ function SetupWizard({ onClose }) {
 
 export default function WhatsAppConnectionPanel() {
   const [showSetup, setShowSetup] = useState(false);
-  const [serverUrl, setServerUrl] = useState("http://localhost:3001");
+
+  const getServerUrl = () => {
+    if (window.location.port === "5173" || window.location.port === "3000") return "";
+    return "http://localhost:3001";
+  };
+  const serverUrl = getServerUrl();
 
   const { data: status, isLoading, error: statusError } = useQuery({
     queryKey: ["wa_status", serverUrl],

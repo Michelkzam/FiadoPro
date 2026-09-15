@@ -1,12 +1,16 @@
 const sanitizePhone = (phone) => (phone || "").replace(/\D/g, "");
-const BAILEYS_SERVER = "http://localhost:3001";
+const getServerUrl = () => {
+  if (window.location.port === "5173" || window.location.port === "3000") return "";
+  return "http://localhost:3001";
+};
 
 export const sendWhatsApp = async (phone, message) => {
   const clean = sanitizePhone(phone);
   if (!clean) return { method: "skipped", success: false, reason: "no_phone" };
 
+  const serverUrl = getServerUrl();
   try {
-    const res = await fetch(`${BAILEYS_SERVER}/api/send`, {
+    const res = await fetch(`${serverUrl}/api/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: clean, message }),

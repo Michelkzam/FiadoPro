@@ -2,11 +2,41 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { spawn } from 'child_process'
+import { existsSync } from 'fs'
+
+function baileysPlugin() {
+  let serverProcess = null
+  return {
+    name: 'baileys-server',
+    configureServer(server) {
+      const serverDir = path.resolve(__dirname, 'server')
+      const serverEntry = path.join(serverDir, 'index.js')
+      if (!existsSync(serverEntry)) return
+
+      server.httpServer?.once('listening', () => {
+        serverProcess = spawn('node', [serverEntry], {
+          cwd: serverDir,
+          stdio: 'inherit',
+          env: { ...process.env, PORT: '3001' },
+        })
+        serverProcess.on('error', (err) => {
+          console.error('[Baileys] Erro ao iniciar:', err.message)
+        })
+      })
+
+      process.on('exit', () => {
+        if (serverProcess) serverProcess.kill()
+      })
+    },
+  }
+}
 
 export default defineConfig({
   logLevel: 'error',
   plugins: [
     react(),
+    baileysPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
@@ -73,6 +103,14 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/qr': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      '/status': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },
