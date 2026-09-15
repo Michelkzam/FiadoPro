@@ -40,13 +40,13 @@ function SetupWizard({ onClose }) {
       </div>
 
       <div className="space-y-3">
-        <p className="text-sm font-medium">Como iniciar:</p>
+        <p className="text-sm font-medium">Como configurar:</p>
         <div className="flex items-start gap-3">
           <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-green-600">1</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            <strong>Windows:</strong> Clique duas vezes no arquivo <code className="bg-muted px-1 rounded">iniciar.bat</code>
+            Execute <code className="bg-muted px-1 rounded">instalar.bat</code> <strong>uma vez so</strong> (inicia automatico com o Windows)
           </p>
         </div>
         <div className="flex items-start gap-3">
@@ -59,7 +59,7 @@ function SetupWizard({ onClose }) {
           <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-green-600">3</span>
           </div>
-          <p className="text-sm text-muted-foreground">Pronto! O bot esta ativo e respondendo</p>
+          <p className="text-sm text-muted-foreground">Pronto! Nunca mais precisa clicar em nada</p>
         </div>
       </div>
 
@@ -150,7 +150,7 @@ export default function WhatsAppConnectionPanel() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Ou execute o arquivo <strong>iniciar.bat</strong> na pasta do projeto (Windows).
+                Para inicio automatico com o Windows, execute <strong>instalar.bat</strong> (uma vez so).
               </p>
               <div className="flex gap-2 mt-3">
                 <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-2">
@@ -241,9 +241,9 @@ export default function WhatsAppConnectionPanel() {
         <h3 className="font-semibold text-foreground mb-4">Como Funciona</h3>
         <div className="space-y-3">
           {[
-            { n: "1", t: "Inicie o servidor", d: "Execute iniciar.bat ou use o terminal" },
+            { n: "1", t: "Execute instalar.bat", d: "Uma vez so - configura inicio automatico" },
             { n: "2", t: "Escaneie o QR Code", d: "WhatsApp > Dispositivos conectados > Conectar" },
-            { n: "3", t: "Pronto!", d: "Cliente envia msg, bot responde automaticamente" },
+            { n: "3", t: "Pronto!", d: "Bot ativo 24/7, sem clicar em nada" },
           ].map(i => (
             <div key={i.n} className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
